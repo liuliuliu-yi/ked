@@ -1,0 +1,245 @@
+raw_label,standard_label
+1 degree atrioventricular block,First-degree atrioventricular block
+first degree AV block,First-degree atrioventricular block
+first degree atrioventricular block,First-degree atrioventricular block
+borderline first degree atrioventricular block,Borderline first-degree atrioventricular block
+borderline prolonged PR interval,Borderline prolonged PR interval
+2 degree atrioventricular block,Second-degree atrioventricular block
+second degree AV block,Second-degree atrioventricular block
+2 degree atrioventricular block(Type one),Mobitz type II atrioventricular block
+Mobitz type II atrioventricular block,Mobitz type II atrioventricular block
+third degree AV block,Third-degree atrioventricular block
+3 degree atrioventricular block,Third-degree atrioventricular block
+Acute myocardial infarction,Acute myocardial infarction
+acute myocardial infarction,Acute myocardial infarction
+Acute myocardial infarction of anterior wall,Acute anterior wall myocardial infarction
+anterior myocardial infarction,Anterior myocardial infarction
+anterolateral myocardial infarction,Anterolateral myocardial infarction
+anteroseptal myocardial infarction,Anteroseptal myocardial infarction
+inferior myocardial infarction,Inferior myocardial infarction
+lateral myocardial infarction,Lateral myocardial infarction
+old anterior myocardial infarction,Old anterior myocardial infarction
+old anterolateral myocardial infarction,Old anterolateral myocardial infarction
+old inferior myocardial infarction,Old inferior myocardial infarction
+inferolateral myocardial infarction,Inferolateral myocardial infarction
+inferoposterior myocardial infarction,Inferoposterior myocardial infarction
+inferoposterolateral myocardial infarction,Inferoposterolateral myocardial infarction
+posterior myocardial infarction,Posterior myocardial infarction
+supraventricular tachycardia,Supraventricular tachycardia
+Supraventricular Tachycardia,Supraventricular tachycardia
+sinus rhythm,Sinus rhythm
+Sinus Rhythm,Sinus rhythm
+sinus arrhythmia,Sinus arrhythmia
+Sinus Arrhythmia,Sinus arrhythmia
+sinus bradycardia,Sinus bradycardia
+Sinus Bradycardia,Sinus bradycardia
+sinus tachycardia,Sinus tachycardia
+Sinus Tachycardia,Sinus tachycardia
+sinus arrest,Sinus arrest
+Sinus arrest,Sinus arrest
+atrial fibrillation,Atrial fibrillation
+Atrial Fibrillation,Atrial fibrillation
+atrial flutter,Atrial flutter
+Atrial Flutter,Atrial flutter
+atrial premature complex,Atrial premature complex
+atrial premature beats,Atrial premature beats
+atrial premature beats,Atrial premature beats
+Atrial premature complex,Atrial premature complex
+Atrial bigeminy,Atrial bigeminy
+Atrial arrhythmia,Atrial arrhythmia
+Atrial arrhythmia,Atrial arrhythmia
+Atrial escape complex,Atrial escape complex
+Atrial rhythm,Atrial rhythm
+Atrioventricular Reentrant Tachycardia,Atrioventricular reentrant tachycardia
+Atrioventricular nodal re-entry tachycardia,Atrioventricular nodal re-entry tachycardia
+Atrioventricular dissociation,Atrioventricular dissociation
+Atrioventricular block,Atrioventricular block (unspecified)
+atrioventricular block,Atrioventricular block (unspecified)
+first degree atrioventricular block,First-degree atrioventricular block
+second degree atrioventricular block,Second-degree atrioventricular block
+third degree atrioventricular block,Third-degree atrioventricular block
+Mobitz type II atrioventricular block,Mobitz type II atrioventricular block
+PR interval extension,Prolonged PR interval
+prolonged PR interval,Prolonged PR interval
+short PR interval,Short PR interval
+Shortened PR interval,Short PR interval
+Prolonged P wave,Prolonged P wave
+QT interval extension,QT interval prolongation
+QT interval prolongation,QT interval prolongation
+long QT-interval,QT interval prolongation
+prolonged QT interval,QT interval prolongation
+Shortened QT interval,Short QT interval
+T wave Change,T wave abnormality
+T wave abnormality,T wave abnormality
+T wave opposite,T wave inversion
+tall P wave,Tall P wave
+Tall P wave,Tall P wave
+U wave,U wave
+R wave,R wave abnormality
+abnormal Q wave,Abnormal Q wave
+abnormal R wave progression,Abnormal R wave progression
+QRS changes in V3/V4 leads,QRS changes in V3/V4
+P wave Change,P wave change
+ventricular premature complex,Ventricular premature complex
+premature ventricular contractions,Premature ventricular contractions
+ventricular premature beat,Ventricular premature beat
+ventricular bigeminy,Ventricular bigeminy
+paroxysmal ventricular tachycardia,Paroxysmal ventricular tachycardia
+ventricular escape rhythm,Ventricular escape rhythm
+Ventricular escape rhythm,Ventricular escape rhythm
+ventricular escape beat,Ventricular escape beat
+ventricular escape trigeminy,Ventricular escape trigeminy
+ventricular fibrillation,Ventricular fibrillation
+ventricular fusion wave,Ventricular fusion wave
+ventricular hypertrophy,Ventricular hypertrophy
+Ventricular hypertrophy,Ventricular hypertrophy
+left ventricular hypertrophy,Left ventricular hypertrophy
+left ventricle hypertrophy,Left ventricular hypertrophy
+right ventricular hypertrophy,Right ventricular hypertrophy
+right ventricle hypertrophy,Right ventricular hypertrophy
+Wolff-Parkinson-White pattern,Wolff-Parkinson-White syndrome
+Wolf-Parkinson-White syndrome,Wolff-Parkinson-White syndrome
+Wolff-Parkinson-White syndrome,Wolff-Parkinson-White syndrome
+Bundle branch block,Bundle branch block
+left bundle branch block,Left bundle branch block
+left front bundle branch block,Left front bundle branch block
+complete left bundle branch block,Complete left bundle branch block
+incomplete left bundle branch block,Incomplete left bundle branch block
+right bundle branch block,Right bundle branch block
+complete right bundle branch block,Complete right bundle branch block
+incomplete right bundle branch block,Incomplete right bundle branch block
+Left anterior fascicular block,Left anterior fascicular block
+left anterior fascicular block,Left anterior fascicular block
+Left posterior fascicular block,Left posterior fascicular block
+left posterior fascicular block,Left posterior fascicular block
+Left atrial enlargement,Left atrial enlargement
+left atrial enlargement,Left atrial enlargement
+left atrial abnormality,Left atrial abnormality
+Left atrial abnormality,Left atrial abnormality
+left atrial hypertrophy,Left atrial hypertrophy
+Left atrial hypertrophy,Left atrial hypertrophy
+right atrial hypertrophy,Right atrial hypertrophy
+Right atrial hypertrophy,Right atrial hypertrophy
+right atrial abnormality,Right atrial abnormality
+Right atrial abnormality,Right atrial abnormality
+Right atrial enlargement,Right atrial enlargement
+right atrial overload/enlargement,Right atrial overload/enlargement
+left atrial overload/enlargement,Left atrial overload/enlargement
+Axis left shift,Left axis deviation
+axis left shift,Left axis deviation
+left axis deviation,Left axis deviation
+marked left axis deviation,Marked left axis deviation
+axis right shift,Right axis deviation
+right axis deviation,Right axis deviation
+leftward axis,Left axis deviation
+rightward axis,Right axis deviation
+Brugada syndrome,Brugada syndrome
+colockwise rotation,Clockwise rotation
+countercolockwise rotation,Counterclockwise rotation
+Counterclockwise vectorcardiographic loop,Counterclockwise rotation
+early repolarization,Early repolarization
+Early repolarization of the ventricles,Early repolarization
+ectopic atrial tachycardia,Ectopic atrial tachycardia
+ectopic atrial bradycardia,Ectopic atrial bradycardia
+ectopic atrial rhythm,Ectopic rhythm
+Ectopic rhythm,Ectopic rhythm
+Digitalis-effect,Digitalis effect
+digitalis-effect,Digitalis effect
+electrolytic disturbance or drug (former EDIS),Electrolyte disturbance or drug effect
+generalized low QRS voltages,Generalized low QRS voltages
+Low QRS voltages in limb leads,Low QRS voltages in limb leads
+low QRS voltages in limb leads,Low QRS voltages in limb leads
+Low QRS voltages in precordial leads,Low QRS voltages in precordial leads
+low QRS voltages in precordial leads,Low QRS voltages in precordial leads
+low voltage in the extremity leads,Low voltage in the extremity leads
+low voltage in the precordial leads,Low voltage in the precordial leads
+lower voltage QRS in all lead,Lower voltage QRS in all leads
+fQRS Wave,fQRS Wave
+rSr' pattern in V1 lead,rSr' pattern in V1 lead
+poor R wave progression,Poor R wave progression
+non-specific ST changes,Non-specific ST changes
+non-specific ST segment junctional depression,Non-specific ST segment depression
+non-specific ST segment depression,Non-specific ST segment depression
+non-specific anterior T wave changes,Non-specific T wave abnormality 
+non-specific anterolateral ST-T changes,Non-specific T wave abnormality 
+non-specific anterolateral T wave changes,Non-specific T wave abnormality 
+non-specific anteroseptal T wave changes,Non-specific T wave abnormality
+non-specific extensive ST-T changes,Non-specific T wave abnormality
+non-specific extensive T wave changes,Non-specific T wave abnormality 
+non-specific inferior and lateral T wave changes,Non-specific T wave abnormality
+non-specific inferior ST-T changes,Non-specific T wave abnormality
+non-specific inferior T wave changes,Non-specific T wave abnormality 
+non-specific inferior/lateral ST-T changes,Non-specific T wave abnormality 
+non-specific inferior/lateral T wave changes,Non-specific T wave abnormality 
+non-specific lateral ST segement changes,Non-specific T wave abnormality 
+non-specific lateral ST-T changes,Non-specific T wave abnormality 
+non-specific lateral T wave changes,Non-specific T wave abnormality 
+non-specific septal T wave changes,Non-specific T wave abnormality
+non-diagnostic T abnormalities,Non-diagnostic T abnormalities
+non-specific intraventricular conduction delay,Non-specific intraventricular conduction delay/disturbance
+non-specific intraventricular conduction disturbance (block),Non-specific intraventricular conduction delay/disturbance
+intraventricular conduction defect,Intraventricular conduction defect
+intraventricular block,Intraventricular block
+indeterminate axis,Indeterminate axis
+ST segment changes,ST-T abnormality
+ST segment elevation,ST segment elevation
+ST-T changes compatible with ventricular aneurysm,ST-T abnormality
+ST extension,ST segment elevation
+ST drop down,ST segment depression
+ST tilt up,ST segment elevation
+ST-T Change,ST-T abnormality
+ST-T abnormality,ST-T abnormality
+secondary repolarization abnormality,Secondary repolarization abnormality
+repolarization abnormality,Repolarization abnormality
+myocardial injury/ischemia,Myocardial injury/ischemia
+myocardial ischemia,Myocardial ischemia
+ischemic in anterior leads,Ischemia in anterior leads
+ischemic in anterolateral leads,Ischemia in anterolateral leads
+ischemic in anteroseptal leads,Ischemia in anteroseptal leads
+ischemic in inferior leads,Ischemia in inferior leads
+ischemic in inferolateral leads,Ischemia in inferolateral leads
+ischemic in lateral leads,Ischemia in lateral leads
+non-specific ischemic,Non-specific ischemic
+extensive myocardial infarction,Extensive myocardial infarction
+extensive ST-T changes,Extensive ST-T changes
+extensive T wave changes,Extensive T wave changes
+septal myocardial infarction,Septal myocardial infarction
+septal hypertrophy,Septal hypertrophy
+hypertrophy,Hypertrophy
+voltage criteria for left ventricular hypertrophy,Voltage criteria for left ventricular hypertrophy
+borderline ECG,Borderline ECG
+normal ECG,Normal ECG
+normal ECG except for rate,Normal ECG except for rate
+normal variant,Normal variant
+abnormal ECG,Abnormal ECG
+regular supraventricular rhythm,Regular supraventricular rhythm
+slow ventricular response,Slow ventricular response
+rapid ventricular response,Rapid ventricular response
+accelerated idioventricular rhythm,Accelerated idioventricular rhythm
+Accelerated idioventricular rhythm,Accelerated idioventricular rhythm
+accelerated junctional rhythm,Accelerated junctional rhythm
+junctional escape beat,Junctional escape beat
+junctional premature beat,Junctional premature beat
+junctional tachycardia,Junctional tachycardia
+artificial pacing,Artificial pacemaker rhythm
+Rhythm from artificial pacing,Artificial pacemaker rhythm
+Brugada syndrome,Brugada syndrome
+Sinoatrial block,Sinoatrial block
+Sinus Atrium to Atrial Wandering Rhythm,Sinus atrial to atrial wandering rhythm
+Blocked premature atrial contraction,Blocked premature atrial contraction
+Counterclockwise vectorcardiographic loop,Counterclockwise rotation
+Early repolarization of the ventricles,Early repolarization
+Myocardial infraction in the side wall,Myocardial infarction - side wall
+Myocardial infarction - side wall,Myocardial infarction - side wall
+Premature ventricular contractions,Premature ventricular contractions
+Premature ventricular beat,Premature ventricular beat
+Supraventricular premature beats,Supraventricular premature beats
+fQRS Wave,fQRS Wave
+rSr' pattern in V1 lead,rSr' pattern in V1 lead
+subendocardial injury in anterolateral leads,Subendocardial injury 
+subendocardial injury in anteroseptal leads,Subendocardial injury 
+subendocardial injury in inferior leads,Subendocardial injury
+subendocardial injury in inferolateral leads,Subendocardial injury
+subendocardial injury in lateral leads,Subendocardial injury
+aberrant ventricular conduction,Abnormal ECG
+rSr' pattern in V1 lead,rSr' pattern in V1 lead
