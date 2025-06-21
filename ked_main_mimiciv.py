@@ -81,27 +81,27 @@ def main(args, config):
     #########################################################
     #从这里输入训练、测试、验证数据集
     ##########################################################
-    X_train = pd.read_json("./dataset/mimiciv/data_y_total_train.json")
-    X_val = pd.read_json("./dataset/mimiciv/data_y_total_val.json")
-    X_test = pd.read_json("./dataset/mimiciv/data_y_total_test.json")
-    y_train = np.load("./dataset/mimiciv/y_train_one_hot_data.npy", allow_pickle=True)
-    y_test = np.load("./dataset/mimiciv/y_test_one_hot_data.npy", allow_pickle=True)
-    y_val = np.load("./dataset/mimiciv/y_val_one_hot_data.npy", allow_pickle=True)
+    # X_train = pd.read_json("./dataset/mimiciv/data_y_total_train.json")
+    # X_val = pd.read_json("./dataset/mimiciv/data_y_total_val.json")
+    # X_test = pd.read_json("./dataset/mimiciv/data_y_total_test.json")
+    # y_train = np.load("./dataset/mimiciv/y_train_one_hot_data.npy", allow_pickle=True)
+    # y_test = np.load("./dataset/mimiciv/y_test_one_hot_data.npy", allow_pickle=True)
+    # y_val = np.load("./dataset/mimiciv/y_val_one_hot_data.npy", allow_pickle=True) 
+    #all
+    train_df = pd.read_csv("/data_C/sdb1/lyi/ked/ECGFM-KED-main/dataset/all_data/train_df.csv")
+    test_df = pd.read_csv("/data_C/sdb1/lyi/ked/ECGFM-KED-main/dataset/all_data/test_df.csv")
+    val_df = pd.read_csv("/data_C/sdb1/lyi/ked/ECGFM-KED-main/dataset/all_data/val_df.csv")
 
-
-
-    # X_feature = pd.read_json('/home/tyy/project/ecgfm_ked/dataset/ptb-xl/ptb-xl-plus/train_sample_feature_desc_result.json')
-    # X_report = pd.read_csv("/home/tyy/ecg_ptbxl/output/exp0/data/total_report_train_final.csv", index_col=[0])
 
     #构建Dataset与DataLoader
-    train_dataset = MimicivDataset(X_train, y_train, useAugment=config["use_report_augment"],
+    train_dataset = MimicivDataset(train_df, useAugment=config["use_report_augment"],
                                       use_what_label=config['use_what_label'], useFeature=config["use_feature_augment"],
                                    mimic_augment_type=config['mimic_augment_type'])
     # else:
     #     train_dataset = TotalLabelDataset(X_train, y_train, X_report, useAugment=config["use_report_augment"],
     #                                       use_what_label=config['use_what_label'])
-    test_dataset = MimicivDataset(X_test, y_test, use_what_label=config['use_what_label'])
-    val_dataset = MimicivDataset(X_val, y_val, use_what_label=config['use_what_label'])
+    test_dataset = MimicivDataset(test_df, use_what_label=config['use_what_label'])
+    val_dataset = MimicivDataset(val_df, use_what_label=config['use_what_label'])
     train_dataloader = DataLoader(train_dataset,
                                   batch_size=config['batch_size'],
                                   num_workers=0,
@@ -229,7 +229,7 @@ def main(args, config):
                 """
                 save_file_name = "best_valid_all_increase_zhipuai_augment_epoch_" + str(epoch)
             # /home/user/tyy/project/ked or /home/tyy/project/ecgfm_ked
-            with open("/home/user/tyy/project/ked/trained_model/checkpoints_mimiciv/" + save_file_name + ".pt", "wb") as f:
+            with open("/data_C/sdb1/lyi/ked/ECGFM-KED-main/trained_model/checkpoints_mimiciv/" + save_file_name + ".pt", "wb") as f:
                 torch.save(save_obj, f)
 
             test_loss, test_auc, test_metrics = valid_on_ptb(model, ecg_model, text_encoder, tokenizer,
@@ -267,7 +267,7 @@ def main(args, config):
                 'epoch': epoch,
             }
             #每轮都保存当前checkpoint
-            with open("/home/user/tyy/project/ked/trained_model/checkpoints_mimiciv/checkpoint_state.pt", "wb") as f:
+            with open("/data_C/sdb1/lyi/ked/ECGFM-KED-main/trained_model/checkpoints_mimiciv/checkpoint_state.pt", "wb") as f:
                 torch.save(save_obj, f)
     #训练总时长统计
     total_time = time.time() - start_time

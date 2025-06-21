@@ -13,119 +13,59 @@ import pandas as pd
 
 
 class MimicivDataset(Dataset):
-    def __init__(self, X_data, Y_label,Z_report, useAugment=False, use_what_label='diagnosis_label', use_what_prompt='base',
+    def __init__(self, df, useAugment=False, use_what_label='diagnosis_label', use_what_prompt='base',
                  feature_data=None,useFeature=False, mimic_augment_type="mimiciv_label_map_report"):
-        self.X_data = X_data    ## 输入特征（如ECG文件路径、报告等，通常为DataFrame）
-        self.Y_data = Y_data ## 标签，通常为numpy数组
-        self.mimic_augment_type = mimic_augment_type # # 增强类型，用于确定增强用的label map
-        self.background_info, self.label_list = self.get_background_infp() ## 获取背景信息和标签列表 用于报告增强
-        self.vis_root = '/home/user/dataSpace/mimic_iv_ecg/mimic-iv-ecg-diagnostic-electrocardiogram-matched-subset-1.0/' # # 数据根目录
-        # if report is not None:
-        report = X_data['report'].values # # 读取ECG报告
-        if useAugment and not useFeature:
-            self.report_data = self.report_augment(report)
-        elif useFeature and useAugment:
-            # 同时用特征和报告增强
-            self.report_data = self.report_feature_all_augment(report,
-                                                           feature_data['features_desc_result'].values)
-        elif useFeature:
-            self.report_data = self.report_feature_augment(report, feature_data['features_desc_result'].values)
-        else: # # 普通，不增强
-            self.report_data = [item if not str(item) == 'nan' else "" for item in report]
-        # else:
-        #     self.report_data = None
+        self.df = df   ## 输入特征（如ECG文件路径、二值化标签、报告等，通常为DataFrame）
+        self.useAugment = useAugment
+        self.use_what_label = use_what_label
+        self.use_what_prompt = use_what_prompt
+        self.useFeature = useFeature
+        self.mimic_augment_type = mimic_augment_type
 
 
     def __len__(self): # # 返回数据集样本数
-        return len(self.X_data) 
+        return len(self.df) 
 
-    #背景信息获取
-    def get_background_infp(self):
-        mimic_augment_type = self.mimic_augment_type
-        with open("/home/user/tyy/project/ked/dataset/mimiciv/"+mimic_augment_type+".json", "r") as f:
-            background_info = json.load(f)
-        f = open('/home/user/tyy/project/ked/dataset/mimiciv/mlb.pkl', 'rb')
-        data = pickle.load(f)
-        return background_info, data.classes_
-    #报告增强
-    def report_augment(self, report):
-        """"""
-        new_report = []
-        for idx, item in enumerate(report):
-            if str(item) == 'nan':
-                new_report.append("")
-                continue
-            label_list = self.Y_data[idx]
-            disease_label_index = np.where(label_list == 1)[0]
-            background_list = []
-            for sub_idx in disease_label_index:
-                sub_label = self.label_list[sub_idx]
-                if sub_label in self.background_info.keys():
-                    background_list.append(self.background_info[sub_label])
-            if background_list:
-                background_info = ". ".join(background_list)
-                final_report = " This ECG is: " + item + "\nBackground information: " +background_info
-            else:
-                final_report = " This ECG is: " + item
-            new_report.append(final_report)
-        return new_report
-    #特征增强报告
-    def report_feature_augment(self, report, feature):
-        """"""
-        new_report = []
-        for rpt, ftr in zip(report, feature):
-            if str(rpt) == 'nan':
-                new_report.append("")
-                continue
-            final_report = ', '.join(ftr) + ". ECG Report: " + rpt
-            new_report.append(final_report)
-        return new_report
-    #全增强
-    def report_feature_all_augment(self, report, feature):
-        """"""
-        new_report = []
-        for idx in range(len(report)):
-            rpt = report[idx]
-            ftr = feature[idx]
-            if str(rpt) == 'nan':
-                new_report.append("")
-                continue
-            label_list = self.Y_data[idx]
-            disease_label_index = np.where(label_list == 1)[0]
-            background_list = []
-            for sub_idx in disease_label_index:
-                sub_label = self.label_list[sub_idx]
-                sub_label = self.all_label_map[sub_label]
-                if sub_label in self.background_info.keys():
-                    background_list.append(self.background_info[sub_label])
-            if background_list:
-                background_info = ". ".join(background_list)
-                final_report = "Background information: " +background_info+ "ECG feature: " + ', '.join(ftr) +" ECG Report: " + rpt
-            else:
-                final_report = ', '.join(ftr) + ". ECG Report: " + rpt
-            new_report.append(final_report)
-        return new_report
+    
     ########################################################################
     #重采样 可改变[12.1000]
     #######################################################################
     #获取单个样本
-    def __getitem__(self, item):
-        path = self.X_data["path"].iloc[item] ## 获取ECG文件路径
-        ecg_signal = wfdb.rdsamp(path)  # # 读取ECG信号
-        ecg = ecg_signal[0].T
-        #ecg = torch.from_numpy(resample(ecg, int(ecg.shape[1] / 5), axis=1))
-        ecg = torch.from_numpy(ecg) #[12.5000]
-        if torch.any(torch.isnan(ecg)):
-            isnan = torch.isnan(ecg)
-            ecg = torch.where(isnan, torch.zeros_like(ecg), ecg)
+    def __getitem__(self, idx):
+        # 1. 读取信号路径
+        path = self.df.loc[idx, 'path']
 
-        disease = self.Y_data[item] # 获取标签
-        if self.report_data is not None:
-            report = self.report_data[item] ## 获取报告
-            return {"signal":ecg,  "label":disease, "report": report}
-        else:
-            return {"signal": ecg, "label": disease}
+        #判断若是mimic-iv的信号需要交换一下信号通道的位置，若不是，则直接读取
 
+        # 2. 读取信号数据（你可按需用wfdb等库读取）
+        sig, fields = wfdb.rdsamp(path)  # ecg_signal shape: (timesteps, channels) (5000, 12)
+        sig = sig.T #(12,5000)
+        if 'mimic-iv' in path : 
+            # 交换avL和avF列 #(12, 5000)
+            sig[[4, 5], :] = sig[[5, 4], :]
+        #z-score归一化:
+        def zscore_norm(ecg_signal):
+            # (channels, timesteps)
+            mean = np.mean(ecg_signal, axis=1, keepdims=True)
+            std = np.std(ecg_signal, axis=1, keepdims=True)
+            ecg_norm=(ecg_signal - mean) / (std + 1e-8)
+            return ecg_norm
+        sig_norm = zscore_norm(sig)
+
+        # 3. 读取label，转为list/array
+        label_str = self.df.loc[idx, 'label']
+        label = ast.literal_eval(label_str)  # 转为list
+        label = torch.tensor(label, dtype=torch.float32)  # 可选，转为tensor
+
+        # 4. 读取report
+        report = self.df.loc[idx, 'report']
+
+        return {
+            "signal": sig_norm,
+            "label": label,
+            "report": report
+        }
+       
 
 
 class NewECGDataset(Dataset):
@@ -961,27 +901,33 @@ if __name__ == '__main__':
 #     data = pickle.load(f)
 #     print([item for item in data.classes_])
 #     print()
-    f = open('/home/user/tyy/project/ked/dataset/clinical_dataset/mlb12.pkl', 'rb')
-    data = pickle.load(f)
-    label_list = {
-                'I°房室传导阻滞': "first degree atrioventricular block",
-                'T波倒置': "inverted T wave",
-                "不齐": "Sinus arrhythmia",
-                "完全性右束支传导阻滞": "complete right bundle branch block",
-                '完全性左束支传导阻滞': "complete left bundle branch block",
-                "室上性心动过速": "Supraventricular Tachycardia",
-                # "室性早搏": "ventricular premature complex:Look for wide QRS complexes (>0.12 seconds) with abnormal morphology, absence of preceding P waves, and compensatory pause. VPCs may have different shapes, so careful analysis is crucial.",
-                "室性早搏": "ventricular premature complex",
-                "左前分支传导阻滞": "Left anterior fascicular block",
-                "心房扑动": "Atrial Flutter",
-                "心房颤动": "Atrial Fibrillation",
-                # "房性早搏": "atrial premature complex:Look for an abnormal P wave morphology, occurring earlier than expected, followed by a premature QRS complex.",
-                "房性早搏": "atrial premature complex",
-                "正常心电图": "normal ECG",
-                "窦性心动过缓": "Sinus Bradycardia",
-                "窦性心动过速": "Sinus Tachycardia"}
-    print([label_list[item] for item in data.classes_])
-    print([item for item in data.classes_])
+
+
+
+    # f = open('/home/user/tyy/project/ked/dataset/clinical_dataset/mlb12.pkl', 'rb')
+    # data = pickle.load(f)
+    # label_list = {
+    #             'I°房室传导阻滞': "first degree atrioventricular block",
+    #             'T波倒置': "inverted T wave",
+    #             "不齐": "Sinus arrhythmia",
+    #             "完全性右束支传导阻滞": "complete right bundle branch block",
+    #             '完全性左束支传导阻滞': "complete left bundle branch block",
+    #             "室上性心动过速": "Supraventricular Tachycardia",
+    #             # "室性早搏": "ventricular premature complex:Look for wide QRS complexes (>0.12 seconds) with abnormal morphology, absence of preceding P waves, and compensatory pause. VPCs may have different shapes, so careful analysis is crucial.",
+    #             "室性早搏": "ventricular premature complex",
+    #             "左前分支传导阻滞": "Left anterior fascicular block",
+    #             "心房扑动": "Atrial Flutter",
+    #             "心房颤动": "Atrial Fibrillation",
+    #             # "房性早搏": "atrial premature complex:Look for an abnormal P wave morphology, occurring earlier than expected, followed by a premature QRS complex.",
+    #             "房性早搏": "atrial premature complex",
+    #             "正常心电图": "normal ECG",
+    #             "窦性心动过缓": "Sinus Bradycardia",
+    #             "窦性心动过速": "Sinus Tachycardia"}
+    # print([label_list[item] for item in data.classes_])
+    # print([item for item in data.classes_])
+
+
+
     # all_label_map = {"SB": "Sinus Bradycardia", "SR": "Sinus Rhythm", "AFIB": "Atrial Fibrillation",
     #                  "ST": "Sinus Tachycardia", "AF": "Atrial Flutter", "SA": "Sinus Arrhythmia:Focus on leads II, III, and aVF. Look for irregular R-R intervals that vary with respiration. The heart rate should increase during inspiration and decrease during expiration.",
     #                  "SVT": "Supraventricular Tachycardia", "AT": "Atrial Tachycardia"}
