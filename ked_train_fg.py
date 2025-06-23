@@ -43,10 +43,26 @@ class AverageMeter(object):
         self.count += n
         self.avg = self.sum / self.count
 
-def get_text_features(model,text_list,tokenizer,device,max_length):
-    text_token =  tokenizer(list(text_list),add_special_tokens=True,max_length=max_length,padding="max_length",truncation=True,return_tensors='pt').to(device=device)
-    text_features = model.encode_text(text_token)
-    return text_features
+# def get_text_features(model,text_list,tokenizer,device,max_length):
+#     text_token =  tokenizer(list(text_list),add_special_tokens=True,max_length=max_length,padding="max_length",truncation=True,return_tensors='pt').to(device=device)
+#     text_features = model.encode_text(text_token)
+#     return text_features
+def get_text_features(model, text_list, tokenizer, device, max_length, batch_size=32):
+    features = []
+    with torch.no_grad():
+        for i in range(0, len(text_list), batch_size):
+            batch_text = list(text_list[i:i+batch_size])
+            text_token = tokenizer(
+                batch_text,
+                add_special_tokens=True,
+                max_length=max_length,
+                padding="max_length",
+                truncation=True,
+                return_tensors='pt'
+            ).to(device=device)
+            batch_features = model.encode_text(text_token)
+            features.append(batch_features.cpu())
+    return torch.cat(features, dim=0).to(device)
 
 def train(model, ecg_encoder, text_encoder, tokenizer, data_loader, optimizer, epoch, warmup_steps, device, scheduler, args, config, writer,accumulation_steps=1 ):
     clip_loss = ClipLoss(temperature=config["temperature"])
@@ -451,7 +467,7 @@ def valid_on_ptb(model, ecg_encoder, text_encoder, tokenizer, data_loader, epoch
     else:
         text_list = ["Normal ECG", "Myocardial Infarction", "ST/T change", "Conduction Disturbance",
                      "Hypertrophy"]
-
+    
     
     val_scalar_step = epoch*len(data_loader)
     val_losses = []
@@ -464,7 +480,9 @@ def valid_on_ptb(model, ecg_encoder, text_encoder, tokenizer, data_loader, epoch
     # 提前算好label_features，避免每个batch重复计算占用显存
     with torch.no_grad():
         if config["use_ecgNet_Diagnosis"] not in ["ecgNet", "swinT"]:
-            label_features = get_text_features(text_encoder, text_list, tokenizer, device, max_length=args.max_length)
+            label_features = get_text_features(
+    text_encoder, text_list, tokenizer, device, max_length=args.max_length, batch_size=16
+)
 
     for i, sample in enumerate(data_loader):
         signal = sample['signal'].to(device)
