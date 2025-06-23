@@ -44,11 +44,11 @@ class AverageMeter(object):
         self.avg = self.sum / self.count
 
 def get_text_features(model,text_list,tokenizer,device,max_length):
-    text_token =  tokenizer(list(text_list),add_special_tokens=True,max_length=max_length,pad_to_max_length=True,return_tensors='pt').to(device=device)
+    text_token =  tokenizer(list(text_list),add_special_tokens=True,max_length=max_length,padding="max_length",truncation=True,return_tensors='pt').to(device=device)
     text_features = model.encode_text(text_token)
     return text_features
 
-def train(model, ecg_encoder, text_encoder, tokenizer, data_loader, optimizer, epoch, warmup_steps, device, scheduler, args, config, writer):
+def train(model, ecg_encoder, text_encoder, tokenizer, data_loader, optimizer, epoch, warmup_steps, device, scheduler, args, config, writer,accumulation_steps=1 ):
     clip_loss = ClipLoss(temperature=config["temperature"])
     uniCl = UniCL(temperature=config["temperature"], uniCl_type=config["uniCl_type"])
 
@@ -200,6 +200,10 @@ def train(model, ecg_encoder, text_encoder, tokenizer, data_loader, optimizer, e
     else:
         text_list = ["Normal ECG", "Myocardial Infarction", "ST/T change", "Conduction Disturbance",
                            "Hypertrophy"]
+
+
+    accumulation_steps = config.get('accumulation_steps', 1)
+    optimizer.zero_grad()
     try:
         for i, sample in enumerate(metric_logger.log_every(data_loader, print_freq, header)):
             signal = sample['signal'].to(device)
@@ -209,7 +213,7 @@ def train(model, ecg_encoder, text_encoder, tokenizer, data_loader, optimizer, e
             label = torch.tensor(label, device=device)
 
             data_time_m.update(time.time() - end)
-            optimizer.zero_grad()
+            #optimizer.zero_grad()
             if config["ecg_model_name"] in ['resnet1d_wang', 'xresnet1d_101']:
                 ecg_features = ecg_encoder(signal)
                 ecg_features_pool = ecg_features.mean(-1)
@@ -260,8 +264,13 @@ def train(model, ecg_encoder, text_encoder, tokenizer, data_loader, optimizer, e
                 else:
                     loss_clip = clip_loss(ecg_features_pool,report_features) # (32, 768) (32,768)
                 loss = loss_ce * config["loss_ratio"] + loss_clip
+            #
+            loss = loss / accumulation_steps
             loss.backward()
-            optimizer.step()
+            # 梯度累积判断
+            if (i + 1) % accumulation_steps == 0 or (i + 1) == len(data_loader):
+                optimizer.step()
+                optimizer.zero_grad()
 
             writer.add_scalar('loss/loss', loss, scalar_step)
             writer.add_scalar('loss/loss_ce', loss_ce, scalar_step)
@@ -447,45 +456,96 @@ def valid_on_ptb(model, ecg_encoder, text_encoder, tokenizer, data_loader, epoch
     val_scalar_step = epoch*len(data_loader)
     val_losses = []
 
-    # initialize the ground truth and output tensor
-    gt = torch.FloatTensor()
-    gt = gt.cuda(device=device)
-    pred = torch.FloatTensor()
-    pred = pred.cuda(device=device)
+    #############################
+    # 初始化gt和pred为列表，最后再cat，节省显存
+    gt_list = []
+    pred_list = []
+
+    # 提前算好label_features，避免每个batch重复计算占用显存
+    with torch.no_grad():
+        if config["use_ecgNet_Diagnosis"] not in ["ecgNet", "swinT"]:
+            label_features = get_text_features(text_encoder, text_list, tokenizer, device, max_length=args.max_length)
 
     for i, sample in enumerate(data_loader):
         signal = sample['signal'].to(device)
         signal = signal.float()
-
         label = sample['label'].to(device)
         label = torch.tensor(label, device=device)
 
-        gt = torch.cat((gt, label), 0)
+        gt_list.append(label.cpu())  # 先放CPU，最后再拼，节省显存
+
         with torch.no_grad():
             if config["ecg_model_name"] in ['resnet1d_wang', 'xresnet1d_101']:
-                ecg_features = ecg_encoder(signal)  # (32,12,5000)
+                ecg_features = ecg_encoder(signal)
                 ecg_features_pool = ecg_features.mean(-1)
             elif config["ecg_model_name"] in ['swinT']:
                 ecg_features = ecg_encoder(signal)
             else:
-                ecg_features, ecg_features_pool = ecg_encoder(signal)  # (32, 768, 300), (32, 768)
-
+                ecg_features, ecg_features_pool = ecg_encoder(signal)
+            
             if config["use_ecgNet_Diagnosis"] in ["ecgNet", "swinT"]:
-                """"""
-                pred = torch.cat((pred, ecg_features), 0)
+                pred_out = ecg_features
                 label = label.float()
                 val_loss = criterion(ecg_features, label)
+                pred_list.append(pred_out.cpu())
             else:
                 label = label.long()
-                text_features = get_text_features(text_encoder, text_list, tokenizer, device,
-                                                  max_length=args.max_length)
-                pred_class = model(ecg_features.transpose(1, 2), text_features)  # (64,5,2)
-                val_loss = criterion(pred_class.view(-1,2),label.view(-1))
+                pred_class = model(ecg_features.transpose(1, 2), label_features)  # (batch, n_class, 2)
+                val_loss = criterion(pred_class.view(-1,2), label.view(-1))
                 pred_class = torch.softmax(pred_class, dim=-1)
-                pred = torch.cat((pred, pred_class[:,:,1]), 0)
+                # 只收集正类概率
+                pred_list.append(pred_class[:,:,1].cpu())
+
             val_losses.append(val_loss.item())
             writer.add_scalar('val_loss/loss', val_loss, val_scalar_step)
             val_scalar_step += 1
+
+        # 显存主动释放
+        torch.cuda.empty_cache()
+
+    # 全部收集完后再拼接
+    gt = torch.cat(gt_list, 0).cuda(device=device)
+    pred = torch.cat(pred_list, 0).cuda(device=device)
+
+    # # initialize the ground truth and output tensor
+    # gt = torch.FloatTensor()
+    # gt = gt.cuda(device=device)
+    # pred = torch.FloatTensor()
+    # pred = pred.cuda(device=device)
+
+    # for i, sample in enumerate(data_loader):
+    #     signal = sample['signal'].to(device)
+    #     signal = signal.float()
+
+    #     label = sample['label'].to(device)
+    #     label = torch.tensor(label, device=device)
+
+    #     gt = torch.cat((gt, label), 0)
+    #     with torch.no_grad():
+    #         if config["ecg_model_name"] in ['resnet1d_wang', 'xresnet1d_101']:
+    #             ecg_features = ecg_encoder(signal)  # (32,12,5000)
+    #             ecg_features_pool = ecg_features.mean(-1)
+    #         elif config["ecg_model_name"] in ['swinT']:
+    #             ecg_features = ecg_encoder(signal)
+    #         else:
+    #             ecg_features, ecg_features_pool = ecg_encoder(signal)  # (32, 768, 300), (32, 768)
+
+    #         if config["use_ecgNet_Diagnosis"] in ["ecgNet", "swinT"]:
+    #             """"""
+    #             pred = torch.cat((pred, ecg_features), 0)
+    #             label = label.float()
+    #             val_loss = criterion(ecg_features, label)
+    #         else:
+    #             label = label.long()
+    #             text_features = get_text_features(text_encoder, text_list, tokenizer, device,
+    #                                               max_length=args.max_length)
+    #             pred_class = model(ecg_features.transpose(1, 2), text_features)  # (64,5,2)
+    #             val_loss = criterion(pred_class.view(-1,2),label.view(-1))
+    #             pred_class = torch.softmax(pred_class, dim=-1)
+    #             pred = torch.cat((pred, pred_class[:,:,1]), 0)
+    #         val_losses.append(val_loss.item())
+    #         writer.add_scalar('val_loss/loss', val_loss, val_scalar_step)
+    #         val_scalar_step += 1
     metrics = compute_AUCs(gt, pred, n_class = len(text_list))
     AUROC_avg = metrics['mean_auc']
     avg_val_loss = np.array(val_losses).mean()
@@ -498,6 +558,7 @@ def valid_on_ptb(model, ecg_encoder, text_encoder, tokenizer, data_loader, epoch
     # Accs = compute_Accs_threshold(gt.cpu().numpy(), pred.cpu().numpy(), threshold, n_class=len(text_list))
     # metrics["F1"] = F1s[-1]
     # metrics["Accs"] = Accs[-1]
+    torch.cuda.empty_cache()
     return avg_val_loss,AUROC_avg,metrics
 
 def compute_F1s_threshold(gt, pred, threshold, n_class=6):
