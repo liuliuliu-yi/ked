@@ -112,14 +112,14 @@ def main(args, config):
                                   collate_fn=None)
 
     test_dataloader = DataLoader(test_dataset,
-                                  batch_size=config['batch_size']*10,
+                                  batch_size=config['batch_size'],
                                   num_workers=0,
                                   sampler=None,
                                   shuffle=True,
                                   drop_last=True,
                                   collate_fn=None)
     val_dataloader = DataLoader(val_dataset,
-                                 batch_size=config['batch_size']*10,
+                                 batch_size=config['batch_size'],
                                  num_workers=0,
                                  sampler=None,
                                  shuffle=True,
@@ -177,12 +177,23 @@ def main(args, config):
                 + str(config["uniCl_type"])+ ", use_report_augment: " + str(config["use_report_augment"])+ ", use_ecgNet_Diagnosis: "
                 + str(config["use_ecgNet_Diagnosis"]) + ", loss_ratio: " + str(config["loss_ratio"]) + "\n")
     #训练主循环
+    # for epoch in range(start_epoch, max_epoch):
+    #     if epoch > 0:
+    #         lr_scheduler.step(epoch + warmup_steps)
+    #     train_stats = train(model, ecg_model, text_encoder, tokenizer, train_dataloader, optimizer, epoch,
+    #                         warmup_steps, device, lr_scheduler, args, config, writer)
+
     for epoch in range(start_epoch, max_epoch):
         if epoch > 0:
             lr_scheduler.step(epoch + warmup_steps)
-        train_stats = train(model, ecg_model, text_encoder, tokenizer, train_dataloader, optimizer, epoch,
-                            warmup_steps, device, lr_scheduler, args, config, writer)
-
+        # 传递accumulation_steps参数
+        train_stats = train(
+            model, ecg_model, text_encoder, tokenizer, train_dataloader, optimizer, epoch,
+            warmup_steps, device, lr_scheduler, args, config, writer,
+            accumulation_steps=config.get('accumulation_steps', 1)  # 新增参数，默认1
+        )    
+        
+        
         for k, v in train_stats.items():
             if k == 'loss':
                 train_loss_epoch = v
@@ -271,8 +282,8 @@ def main(args, config):
             #每轮都保存当前checkpoint
             with open("/data_C/sdb1/lyi/ked/ECGFM-KED-main/trained_model/checkpoints_mimiciv/checkpoint_state.pt", "wb") as f:
                 torch.save(save_obj, f)
-            
             torch.cuda.empty_cache()
+            
     #训练总时长统计
     total_time = time.time() - start_time
     total_time_str = str(datetime.timedelta(seconds=int(total_time)))
@@ -287,7 +298,7 @@ if __name__ == '__main__':
     parser.add_argument('--max_length', default=256, type=int)
     parser.add_argument('--device', default='cuda')
     parser.add_argument('--seed', default=42, type=int)
-    parser.add_argument('--gpu', type=str,default='3,4,7', help='gpu')
+    parser.add_argument('--gpu', type=str,default='2,4,5,7', help='gpu')
     parser.add_argument('--distributed', default=False, type=bool)
     parser.add_argument('--action', default='train')
     args = parser.parse_args()

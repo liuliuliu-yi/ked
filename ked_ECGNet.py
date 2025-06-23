@@ -306,7 +306,7 @@ class ECGNet(nn.Module):
         # x0 = self.conv3(torch.cat((x_1, x_2, x_3, x_4, x_5), dim=1))
         # x0 = self.bn1(x0)
         # x0 = self.dropout(self.relu(x0))    # (8,32,1,303)
-        
+
         #多分支残差模块
         pool, output = [], []
         for i in range(len(self.sizes)):

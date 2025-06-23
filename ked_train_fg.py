@@ -43,26 +43,26 @@ class AverageMeter(object):
         self.count += n
         self.avg = self.sum / self.count
 
-# def get_text_features(model,text_list,tokenizer,device,max_length):
-#     text_token =  tokenizer(list(text_list),add_special_tokens=True,max_length=max_length,padding="max_length",truncation=True,return_tensors='pt').to(device=device)
-#     text_features = model.encode_text(text_token)
-#     return text_features
-def get_text_features(model, text_list, tokenizer, device, max_length, batch_size=32):
-    features = []
-    with torch.no_grad():
-        for i in range(0, len(text_list), batch_size):
-            batch_text = list(text_list[i:i+batch_size])
-            text_token = tokenizer(
-                batch_text,
-                add_special_tokens=True,
-                max_length=max_length,
-                padding="max_length",
-                truncation=True,
-                return_tensors='pt'
-            ).to(device=device)
-            batch_features = model.encode_text(text_token)
-            features.append(batch_features.cpu())
-    return torch.cat(features, dim=0).to(device)
+def get_text_features(model,text_list,tokenizer,device,max_length):
+    text_token =  tokenizer(list(text_list),add_special_tokens=True,max_length=max_length,padding="max_length",truncation=True,return_tensors='pt').to(device=device)
+    text_features = model.encode_text(text_token)
+    return text_features
+# def get_text_features(model, text_list, tokenizer, device, max_length, batch_size=32):
+#     features = []
+#     with torch.no_grad():
+#         for i in range(0, len(text_list), batch_size):
+#             batch_text = list(text_list[i:i+batch_size])
+#             text_token = tokenizer(
+#                 batch_text,
+#                 add_special_tokens=True,
+#                 max_length=max_length,
+#                 padding="max_length",
+#                 truncation=True,
+#                 return_tensors='pt'
+#             ).to(device=device)
+#             batch_features = model.encode_text(text_token)
+#             features.append(batch_features.cpu())
+#     return torch.cat(features, dim=0).to(device)
 
 def train(model, ecg_encoder, text_encoder, tokenizer, data_loader, optimizer, epoch, warmup_steps, device, scheduler, args, config, writer,accumulation_steps=1 ):
     clip_loss = ClipLoss(temperature=config["temperature"])
@@ -226,7 +226,7 @@ def train(model, ecg_encoder, text_encoder, tokenizer, data_loader, optimizer, e
             signal = signal.float()
 
             label = sample['label'].to(device)
-            label = torch.tensor(label, device=device)
+            label = label.clone().detach().to(device)
 
             data_time_m.update(time.time() - end)
             #optimizer.zero_grad()
@@ -354,34 +354,34 @@ def valid_on_ptb(model, ecg_encoder, text_encoder, tokenizer, data_loader, epoch
         data = pickle.load(f)
         text_list = data.classes_
         if config["use_label_augment"]:
-            with open("/home/user/tyy/project/ked/dataset/mimiciv/mimiciv_label_map_report.json", "r") as f:
+            with open("/data_C/sdb1/lyi/ECGFM-KED-main/dataset/mimiciv/mimiciv_label_map_report.json", "r") as f:
                 background_info = json.load(f)
             text_list = [background_info[item] for item in text_list]
     elif config['use_what_label'] == 'mimiciv_label_4000':
-        f = open('/home/user/tyy/project/ked/dataset/mimiciv/mlb_4000.pkl', 'rb')
+        f = open('/data_C/sdb1/lyi/ECGFM-KED-main/dataset/mimiciv/mlb_4000.pkl', 'rb')
         data = pickle.load(f)
         text_list = data.classes_
     elif config["use_what_label"] == "diagnosis_label":
         if config["use_label_augment"]:
-            with open("/home/user/tyy/project/ked/dataset/all_label_augment.json", 'r') as f:
+            with open("/data_C/sdb1/lyi/ECGFM-KED-main/dataset/all_label_augment.json", 'r') as f:
                 background_info = json.load(f)
-            with open("/home/user/tyy/project/ked/dataset/all_diagnosis_label_map.json", 'r') as f:
+            with open("/data_C/sdb1/lyi/ECGFM-KED-main/dataset/all_diagnosis_label_map.json", 'r') as f:
                 all_diagnosis_label_map = json.load(f)
             text_list = []
             for key, value in all_diagnosis_label_map.items():
                 item = background_info[value] + "This electrocardiogram diagnosed:" + value
                 text_list.append(item)
         else:
-            with open("/home/user/tyy/project/ked/dataset/all_diagnosis_label_map.json", 'r') as f:
+            with open("/data_C/sdb1/lyi/ECGFM-KED-main/dataset/all_diagnosis_label_map.json", 'r') as f:
                 all_diagnosis_label_map = json.load(f)
-            f = open('/home/user/tyy/project/ked/dataset/ptb-xl/output/exp1/data/mlb.pkl', 'rb')
+            f = open('/data_C/sdb1/lyi/ECGFM-KED-main/dataset/ptb-xl/output/exp1/data/mlb.pkl', 'rb')
             data = pickle.load(f)
             text_list = [all_diagnosis_label_map[item] for item in data.classes_]
     elif config["use_what_label"] == "subdiagnosis_label":
         if config["use_label_augment"]:
-            with open("/home/user/tyy/project/ked/dataset/all_subdiagnosis_label_augment.json", 'r') as f:
+            with open("/data_C/sdb1/lyi/ECGFM-KED-main/dataset/all_subdiagnosis_label_augment.json", 'r') as f:
                 background_info = json.load(f)
-            with open("/home/user/tyy/project/ked/dataset/all_subdiagnosis_label_map.json", 'r') as f:
+            with open("/data_C/sdb1/lyi/ECGFM-KED-main/dataset/all_subdiagnosis_label_map.json", 'r') as f:
                 all_diagnosis_label_map = json.load(f)
             text_list = []
             for key, value in all_diagnosis_label_map.items():
@@ -411,25 +411,25 @@ def valid_on_ptb(model, ecg_encoder, text_encoder, tokenizer, data_loader, epoch
                                 'ILBBB':"incomplete left bundle branch block",
                                 'SEHYP':"septal hypertrophy",
                                 'PMI':"posterior myocardial infarction"}
-            f = open('/home/user/tyy/project/ked/dataset/ptb-xl/output/exp1.1/data/mlb.pkl', 'rb')
+            f = open('/data_C/sdb1/lyi/ECGFM-KED-main/dataset/ptb-xl/output/exp1.1/data/mlb.pkl', 'rb')
             data = pickle.load(f)
             text_list = [all_diagnosis_label_map[item] for item in data.classes_]
     elif config["use_what_label"] == "all":
-        with open("/home/tyy/project/ecgfm_ked/dataset/all_label_map.json", 'r') as f:
+        with open("/data_C/sdb1/lyi/ECGFM-KED-main/dataset/all_label_map.json", 'r') as f:
             all_diagnosis_label_map = json.load(f)
-        f = open('/home/tyy/project/ecgfm_ked/dataset/ptb-xl/output/exp0/data/mlb.pkl', 'rb')
+        f = open('/data_C/sdb1/lyi/ECGFM-KED-main/dataset/ptb-xl/output/exp0/data/mlb.pkl', 'rb')
         data = pickle.load(f)
         text_list = [all_diagnosis_label_map[item] for item in data.classes_]
     elif config["use_what_label"] == "form":
-        with open("/home/user/tyy/project/ked/dataset/all_label_map.json", 'r') as f:
+        with open("/data_C/sdb1/lyi/ECGFM-KED-main/dataset/all_label_map.json", 'r') as f:
             all_diagnosis_label_map = json.load(f)
-        f = open('/home/user/tyy/project/ked/dataset/ptb-xl/output/exp2/data/mlb.pkl', 'rb')
+        f = open('/data_C/sdb1/lyi/ECGFM-KED-main/dataset/ptb-xl/output/exp2/data/mlb.pkl', 'rb')
         data = pickle.load(f)
         text_list = [all_diagnosis_label_map[item] for item in data.classes_]
     elif config["use_what_label"] == "rhythm":
-        with open("/home/user/tyy/project/ked/dataset/all_label_map.json", 'r') as f:
+        with open("/data_C/sdb1/lyi/ECGFM-KED-main/dataset/all_label_map.json", 'r') as f:
             all_diagnosis_label_map = json.load(f)
-        f = open('/home/user/tyy/project/ked/dataset/ptb-xl/output/exp3/data/mlb.pkl', 'rb')
+        f = open('/data_C/sdb1/lyi/ECGFM-KED-main/dataset/ptb-xl/output/exp3/data/mlb.pkl', 'rb')
         data = pickle.load(f)
         text_list = [all_diagnosis_label_map[item] for item in data.classes_]
     elif config["use_label_augment"]:
@@ -467,103 +467,50 @@ def valid_on_ptb(model, ecg_encoder, text_encoder, tokenizer, data_loader, epoch
     else:
         text_list = ["Normal ECG", "Myocardial Infarction", "ST/T change", "Conduction Disturbance",
                      "Hypertrophy"]
-    
+
     
     val_scalar_step = epoch*len(data_loader)
     val_losses = []
 
-    #############################
-    # 初始化gt和pred为列表，最后再cat，节省显存
-    gt_list = []
-    pred_list = []
-
-    # 提前算好label_features，避免每个batch重复计算占用显存
-    with torch.no_grad():
-        if config["use_ecgNet_Diagnosis"] not in ["ecgNet", "swinT"]:
-            label_features = get_text_features(
-    text_encoder, text_list, tokenizer, device, max_length=args.max_length, batch_size=16
-)
+    # initialize the ground truth and output tensor
+    gt = torch.FloatTensor()
+    gt = gt.cuda(device=device)
+    pred = torch.FloatTensor()
+    pred = pred.cuda(device=device)
 
     for i, sample in enumerate(data_loader):
         signal = sample['signal'].to(device)
         signal = signal.float()
+
         label = sample['label'].to(device)
-        label = torch.tensor(label, device=device)
+        label = label.clone().detach().to(device)
 
-        gt_list.append(label.cpu())  # 先放CPU，最后再拼，节省显存
-
+        gt = torch.cat((gt, label), 0)
         with torch.no_grad():
             if config["ecg_model_name"] in ['resnet1d_wang', 'xresnet1d_101']:
-                ecg_features = ecg_encoder(signal)
+                ecg_features = ecg_encoder(signal)  # (32,12,5000)
                 ecg_features_pool = ecg_features.mean(-1)
             elif config["ecg_model_name"] in ['swinT']:
                 ecg_features = ecg_encoder(signal)
             else:
-                ecg_features, ecg_features_pool = ecg_encoder(signal)
-            
+                ecg_features, ecg_features_pool = ecg_encoder(signal)  # (32, 768, 300), (32, 768)
+
             if config["use_ecgNet_Diagnosis"] in ["ecgNet", "swinT"]:
-                pred_out = ecg_features
+                """"""
+                pred = torch.cat((pred, ecg_features), 0)
                 label = label.float()
                 val_loss = criterion(ecg_features, label)
-                pred_list.append(pred_out.cpu())
             else:
                 label = label.long()
-                pred_class = model(ecg_features.transpose(1, 2), label_features)  # (batch, n_class, 2)
-                val_loss = criterion(pred_class.view(-1,2), label.view(-1))
+                text_features = get_text_features(text_encoder, text_list, tokenizer, device,
+                                                  max_length=args.max_length)
+                pred_class = model(ecg_features.transpose(1, 2), text_features)  # (64,5,2)
+                val_loss = criterion(pred_class.view(-1,2),label.view(-1))
                 pred_class = torch.softmax(pred_class, dim=-1)
-                # 只收集正类概率
-                pred_list.append(pred_class[:,:,1].cpu())
-
+                pred = torch.cat((pred, pred_class[:,:,1]), 0)
             val_losses.append(val_loss.item())
             writer.add_scalar('val_loss/loss', val_loss, val_scalar_step)
             val_scalar_step += 1
-
-        # 显存主动释放
-        torch.cuda.empty_cache()
-
-    # 全部收集完后再拼接
-    gt = torch.cat(gt_list, 0).cuda(device=device)
-    pred = torch.cat(pred_list, 0).cuda(device=device)
-
-    # # initialize the ground truth and output tensor
-    # gt = torch.FloatTensor()
-    # gt = gt.cuda(device=device)
-    # pred = torch.FloatTensor()
-    # pred = pred.cuda(device=device)
-
-    # for i, sample in enumerate(data_loader):
-    #     signal = sample['signal'].to(device)
-    #     signal = signal.float()
-
-    #     label = sample['label'].to(device)
-    #     label = torch.tensor(label, device=device)
-
-    #     gt = torch.cat((gt, label), 0)
-    #     with torch.no_grad():
-    #         if config["ecg_model_name"] in ['resnet1d_wang', 'xresnet1d_101']:
-    #             ecg_features = ecg_encoder(signal)  # (32,12,5000)
-    #             ecg_features_pool = ecg_features.mean(-1)
-    #         elif config["ecg_model_name"] in ['swinT']:
-    #             ecg_features = ecg_encoder(signal)
-    #         else:
-    #             ecg_features, ecg_features_pool = ecg_encoder(signal)  # (32, 768, 300), (32, 768)
-
-    #         if config["use_ecgNet_Diagnosis"] in ["ecgNet", "swinT"]:
-    #             """"""
-    #             pred = torch.cat((pred, ecg_features), 0)
-    #             label = label.float()
-    #             val_loss = criterion(ecg_features, label)
-    #         else:
-    #             label = label.long()
-    #             text_features = get_text_features(text_encoder, text_list, tokenizer, device,
-    #                                               max_length=args.max_length)
-    #             pred_class = model(ecg_features.transpose(1, 2), text_features)  # (64,5,2)
-    #             val_loss = criterion(pred_class.view(-1,2),label.view(-1))
-    #             pred_class = torch.softmax(pred_class, dim=-1)
-    #             pred = torch.cat((pred, pred_class[:,:,1]), 0)
-    #         val_losses.append(val_loss.item())
-    #         writer.add_scalar('val_loss/loss', val_loss, val_scalar_step)
-    #         val_scalar_step += 1
     metrics = compute_AUCs(gt, pred, n_class = len(text_list))
     AUROC_avg = metrics['mean_auc']
     avg_val_loss = np.array(val_losses).mean()
@@ -576,7 +523,6 @@ def valid_on_ptb(model, ecg_encoder, text_encoder, tokenizer, data_loader, epoch
     # Accs = compute_Accs_threshold(gt.cpu().numpy(), pred.cpu().numpy(), threshold, n_class=len(text_list))
     # metrics["F1"] = F1s[-1]
     # metrics["Accs"] = Accs[-1]
-    torch.cuda.empty_cache()
     return avg_val_loss,AUROC_avg,metrics
 
 def compute_F1s_threshold(gt, pred, threshold, n_class=6):

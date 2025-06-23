@@ -11,7 +11,8 @@ import wfdb
 from scipy.signal import resample
 import pandas as pd
 import ast
-
+import os
+os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:32"
 class MimicivDataset(Dataset):
     def __init__(self, df, useAugment=False, use_what_label='diagnosis_label', use_what_prompt='base',
                  feature_data=None,useFeature=False, mimic_augment_type="mimiciv_label_map_report"):
@@ -43,6 +44,9 @@ class MimicivDataset(Dataset):
         if 'mimic-iv' in path : 
             # 交换avL和avF列 #(12, 5000)
             sig[[4, 5], :] = sig[[5, 4], :]
+
+      
+        #sig = resample(sig, 1000, axis=1)  # (12, 1000)    
         #z-score归一化:
         def zscore_norm(ecg_signal):
             # (channels, timesteps)

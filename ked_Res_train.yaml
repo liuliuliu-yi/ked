@@ -1,5 +1,5 @@
 purpose: "###################使用GEMINI的结果跑一个模型######################"
-batch_size: 32  # ked:80, clip:100, unicl:100 训练时每个batch的样本数
+batch_size: 80  # ked:80, clip:100, unicl:100 训练时每个batch的样本数
 class_num: 167 # Corresponding to: 44, 71, 23, 5, 12(rhythm), 19(form) classes， 105（mimiciv）多标签分类时标签全集数量
 use_what_label: mimiciv_label   #选择用于训练的标签类型mimiciv_label_4000 mimiciv_label or mimiciv_label_4000 diagnosis_label or
 keep_training: ""  #如果非空，为继续训练/微调时加载的模型权重路径。 路径 or “”
@@ -32,7 +32,7 @@ schedular: {sched: cosine, lr: 5e-5, epochs: 10, min_lr: 1e-6, decay_rate: 1, wa
             cooldown_epochs: 0, finetune_epochs: 10}
 
 # test
-test_batch_size: 16 #测试时的batch size。
+test_batch_size: 1 #测试时的batch size。
 test_shaoxing_class_nums: 8  # 20, 6, 8 不同测试集的类别数量
 test_georgia_class_nums: 20
 test_ptbxl_class_nums: 71
@@ -56,3 +56,5 @@ finetune_purpose: "########################zero-shot(all)#######################
 
 # visualization, 画tsne的代码
 visualization: resnet #resnet or lqn
+#梯度累积步数（如每4步累积一次梯度更新）
+accumulation_steps: 4
