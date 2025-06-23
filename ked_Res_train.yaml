@@ -1,0 +1,58 @@
+purpose: "###################使用GEMINI的结果跑一个模型######################"
+batch_size: 32  # ked:80, clip:100, unicl:100 训练时每个batch的样本数
+class_num: 167 # Corresponding to: 44, 71, 23, 5, 12(rhythm), 19(form) classes， 105（mimiciv）多标签分类时标签全集数量
+use_what_label: mimiciv_label   #选择用于训练的标签类型mimiciv_label_4000 mimiciv_label or mimiciv_label_4000 diagnosis_label or
+keep_training: ""  #如果非空，为继续训练/微调时加载的模型权重路径。 路径 or “”
+
+# model：ecg_encoder
+ecg_model_layers: 3   # ResNet等模型的有效层数
+tqn_model_layers: 7 #TQN是ECG编码器的拓展/辅助模块，可以看作是对ResNet等主干特征的进一步序列建模和全局信息整合。
+ecg_model_name: xresnet1d_101 # resnet1d_wang or ecgNet or xresnet1d_101 or swinT
+use_ecgNet_Diagnosis: all  # 控制用哪些ECG网络分支engNet&TQN or ecgNet or all or swinT
+# model：text_encoder
+use_what_prompt: base  # 文本编码器用的提示词类型base, concise, plain_diagnosis, intern
+use_label_augment: False
+use_report_augment: False  #True or False
+use_feature_augment: False
+mimic_augment_type: mimiciv_label_map_report_gemini   #具体的增强类型 mimiciv_label_map_report_zhipuai_new or mimiciv_label_map_report or mimiciv_label_map_report_gemini
+freeze_layers: [0,1,2,3,4,5,6,7,8,9,10] # -1 is not frozen, other numbers are frozen
+bert_model_name: emilyalsentzer/Bio_ClinicalBERT  # 文本编码器选择的预训练模型emilyalsentzer/Bio_ClinicalBERT or microsoft/BiomedNLP-PubMedBERT-base-uncased-abstract-fulltext
+#microsoft/BiomedCLIP-PubMedBERT_256-vit_base_patch16_224
+
+# loss
+loss_cross_image_text: False   # 是否交替优化图文损失true optimizes ce_ecg and ce_text alternately, and false optimizes both
+temperature: 0.1 ## 对比损失温度参数
+loss_type: uniCl  # # 损失函数类型 uniCl 或 cliploss
+loss_ratio: 1
+uniCl_type: increase_dimension   # # uniCl 损失的细分类型 base or increase_dimension
+
+# optim优化器与学习率调度器
+optimizer: {opt: adamW, lr: 5e-5, weight_decay: 0.02}
+schedular: {sched: cosine, lr: 5e-5, epochs: 10, min_lr: 1e-6, decay_rate: 1, warmup_lr: 1e-6, warmup_epochs: 5,
+            cooldown_epochs: 0, finetune_epochs: 10}
+
+# test
+test_batch_size: 16 #测试时的batch size。
+test_shaoxing_class_nums: 8  # 20, 6, 8 不同测试集的类别数量
+test_georgia_class_nums: 20
+test_ptbxl_class_nums: 71
+test_ICBEB_class_nums: 9
+test_clinical_class_nums: 12
+test_code_class_nums: 6
+result_shaoxing_save_name: result_8_label_augment_101.csv #测试结果保存的csv文件名。
+result_georgia_save_name: result_20_label_augment_101.csv
+result_ICBEB_save_name: result_9_label_augment_101.csv
+ptbxl_use_what_label: all # all or subdiagnosis_label or subdiagnosis_label or rhythm or form or diagnosis_label
+
+# description 整体都不行，弃用吧
+zeroshot_report_type: gpt4_report # gemini_desc or gemini_report or zhipuai_desc or zhipuai_report or gpt4_desc
+
+# finetune
+getConfidence: False
+finetune: False
+finetune_batch_size: 16  # ptb-xl form:880
+finetune_sample_rate: 1
+finetune_purpose: "########################zero-shot(all)###############################"
+
+# visualization, 画tsne的代码
+visualization: resnet #resnet or lqn
