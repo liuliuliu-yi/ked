@@ -10,7 +10,7 @@ import os
 import wfdb
 from scipy.signal import resample
 import pandas as pd
-
+import ast
 
 class MimicivDataset(Dataset):
     def __init__(self, df, useAugment=False, use_what_label='diagnosis_label', use_what_prompt='base',
@@ -54,6 +54,7 @@ class MimicivDataset(Dataset):
 
         # 3. 读取label，转为list/array
         label_str = self.df.loc[idx, 'label']
+        label_str = label_str.replace(' ', ',')  # 关键：空格转逗号
         label = ast.literal_eval(label_str)  # 转为list
         label = torch.tensor(label, dtype=torch.float32)  # 可选，转为tensor
 
@@ -821,6 +822,7 @@ class GeorgiaDataset(Dataset):
         return {"signal":signal, "label":label}
 
 if __name__ == '__main__':
+    pass
 #     with open("/home/user/tyy/project/ked/dataset/all_label_map.json", 'r') as f:
 #         all_label_map = json.load(f)
 #     print(all_label_map)

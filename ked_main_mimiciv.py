@@ -3,8 +3,9 @@
 # user:User
 # Author: tyy
 # createtime: 2023-06-03 15:14
-
-
+import torch.distributed as dist
+from torch.nn.parallel import DistributedDataParallel as DDP
+import os
 import argparse
 import logging
 try:
@@ -17,7 +18,7 @@ import time
 import datetime
 import json
 from pathlib import Path
-
+from ruamel.yaml import YAML
 import torch
 import torch.backends.cudnn as cudnn
 from torch.utils.data import DataLoader
@@ -47,7 +48,7 @@ import os
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:128"
 
 
-
+#dist.init_process_group(backend="nccl")
 
 def main(args, config):
     """"""
@@ -156,6 +157,7 @@ def main(args, config):
     text_encoder = CLP_clinical(bert_model_name=config["bert_model_name"], freeze_layers=config['freeze_layers']).to(device=device)
 
     model = TQNModel(num_layers=config["tqn_model_layers"]).to(device=device)
+    #model = DDP(model)
     ##优化器与学习率调度器
     arg_opt = utils.AttrDict(config['optimizer'])
     optimizer = create_optimizer(arg_opt, model, ecg_model, text_encoder)
@@ -269,6 +271,8 @@ def main(args, config):
             #每轮都保存当前checkpoint
             with open("/data_C/sdb1/lyi/ked/ECGFM-KED-main/trained_model/checkpoints_mimiciv/checkpoint_state.pt", "wb") as f:
                 torch.save(save_obj, f)
+            
+            torch.cuda.empty_cache()
     #训练总时长统计
     total_time = time.time() - start_time
     total_time_str = str(datetime.timedelta(seconds=int(total_time)))
@@ -283,12 +287,28 @@ if __name__ == '__main__':
     parser.add_argument('--max_length', default=256, type=int)
     parser.add_argument('--device', default='cuda')
     parser.add_argument('--seed', default=42, type=int)
-    parser.add_argument('--gpu', type=str,default='1', help='gpu')
+    parser.add_argument('--gpu', type=str,default='3,4,7', help='gpu')
     parser.add_argument('--distributed', default=False, type=bool)
     parser.add_argument('--action', default='train')
     args = parser.parse_args()
 
-    config = yaml.load(open(args.config, 'r'), Loader=yaml.Loader)
+
+    os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu  
+    
+    import os
+    import torch
+
+    print("CUDA_VISIBLE_DEVICES:", os.environ.get("CUDA_VISIBLE_DEVICES"))
+    print("可用 GPU 数量:", torch.cuda.device_count())
+    for i in range(torch.cuda.device_count()):
+        print(f"GPU {i} 名称:", torch.cuda.get_device_name(i))
+        print(f"GPU {i} 显存已用:", torch.cuda.memory_allocated(i) / 1024**2, "MB")
+
+    #config = yaml.load(open(args.config, 'r'), Loader=yaml.Loader)
+    yaml = YAML(typ='rt')  
+    # 用新方式加载文件
+    with open(args.config, 'r') as f:
+        config = yaml.load(f)
 
     Path(args.output_dir).mkdir(parents=True, exist_ok=True)
 
