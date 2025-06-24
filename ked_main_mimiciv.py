@@ -188,9 +188,8 @@ def main(args, config):
         text_list = data.classes_
     
     text_features = get_text_features(
-    text_encoder, text_list, tokenizer, device, max_length=args.max_length
-        )
-
+    text_encoder, text_list, tokenizer, device, max_length=args.max_length, batch_size=1
+)
 
 
     for epoch in range(start_epoch, max_epoch):
