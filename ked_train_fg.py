@@ -47,22 +47,7 @@ def get_text_features(model,text_list,tokenizer,device,max_length):
     text_token =  tokenizer(list(text_list),add_special_tokens=True,max_length=max_length,padding="max_length",truncation=True,return_tensors='pt').to(device=device)
     text_features = model.encode_text(text_token)
     return text_features
-# def get_text_features(model, text_list, tokenizer, device, max_length, batch_size=32):
-#     features = []
-#     with torch.no_grad():
-#         for i in range(0, len(text_list), batch_size):
-#             batch_text = list(text_list[i:i+batch_size])
-#             text_token = tokenizer(
-#                 batch_text,
-#                 add_special_tokens=True,
-#                 max_length=max_length,
-#                 padding="max_length",
-#                 truncation=True,
-#                 return_tensors='pt'
-#             ).to(device=device)
-#             batch_features = model.encode_text(text_token)
-#             features.append(batch_features.cpu())
-#     return torch.cat(features, dim=0).to(device)
+
 
 def train(model, ecg_encoder, text_encoder, tokenizer, data_loader, optimizer, epoch, warmup_steps, device, scheduler, args, config, writer,accumulation_steps=1 ):
     clip_loss = ClipLoss(temperature=config["temperature"])
@@ -341,7 +326,10 @@ def train(model, ecg_encoder, text_encoder, tokenizer, data_loader, optimizer, e
     print("Averaged stats:", metric_logger.global_avg())     
     return {k: "{:.6f}".format(meter.global_avg) for k, meter in metric_logger.meters.items()} #,loss_epoch.mean()
 
-def valid_on_ptb(model, ecg_encoder, text_encoder, tokenizer, data_loader, epoch, device, args, config, writer):
+
+
+
+def valid_on_ptb(model, ecg_encoder, text_encoder, tokenizer, data_loader, epoch, device, args, config, writer, text_features):
     if config["use_ecgNet_Diagnosis"] == "ecgNet":
         criterion = nn.BCEWithLogitsLoss()
     else:
@@ -349,124 +337,124 @@ def valid_on_ptb(model, ecg_encoder, text_encoder, tokenizer, data_loader, epoch
     model.eval()
     ecg_encoder.eval()
     text_encoder.eval()
-    if config['use_what_label'] == 'mimiciv_label':
-        f = open('/data_C/sdb1/lyi/ked/ECGFM-KED-main/dataset/shaoxing/mlb.pkl', 'rb')
-        data = pickle.load(f)
-        text_list = data.classes_
-        if config["use_label_augment"]:
-            with open("/data_C/sdb1/lyi/ECGFM-KED-main/dataset/mimiciv/mimiciv_label_map_report.json", "r") as f:
-                background_info = json.load(f)
-            text_list = [background_info[item] for item in text_list]
-    elif config['use_what_label'] == 'mimiciv_label_4000':
-        f = open('/data_C/sdb1/lyi/ECGFM-KED-main/dataset/mimiciv/mlb_4000.pkl', 'rb')
-        data = pickle.load(f)
-        text_list = data.classes_
-    elif config["use_what_label"] == "diagnosis_label":
-        if config["use_label_augment"]:
-            with open("/data_C/sdb1/lyi/ECGFM-KED-main/dataset/all_label_augment.json", 'r') as f:
-                background_info = json.load(f)
-            with open("/data_C/sdb1/lyi/ECGFM-KED-main/dataset/all_diagnosis_label_map.json", 'r') as f:
-                all_diagnosis_label_map = json.load(f)
-            text_list = []
-            for key, value in all_diagnosis_label_map.items():
-                item = background_info[value] + "This electrocardiogram diagnosed:" + value
-                text_list.append(item)
-        else:
-            with open("/data_C/sdb1/lyi/ECGFM-KED-main/dataset/all_diagnosis_label_map.json", 'r') as f:
-                all_diagnosis_label_map = json.load(f)
-            f = open('/data_C/sdb1/lyi/ECGFM-KED-main/dataset/ptb-xl/output/exp1/data/mlb.pkl', 'rb')
-            data = pickle.load(f)
-            text_list = [all_diagnosis_label_map[item] for item in data.classes_]
-    elif config["use_what_label"] == "subdiagnosis_label":
-        if config["use_label_augment"]:
-            with open("/data_C/sdb1/lyi/ECGFM-KED-main/dataset/all_subdiagnosis_label_augment.json", 'r') as f:
-                background_info = json.load(f)
-            with open("/data_C/sdb1/lyi/ECGFM-KED-main/dataset/all_subdiagnosis_label_map.json", 'r') as f:
-                all_diagnosis_label_map = json.load(f)
-            text_list = []
-            for key, value in all_diagnosis_label_map.items():
-                item = background_info[value] + "This electrocardiogram diagnosed:" + value
-                text_list.append(item)
-        else:
-            all_diagnosis_label_map = {'NORM':"normal ECG",
-                                'IMI':"inferior myocardial infarction",
-                                'AMI':"anterior myocardial infarction",
-                                'STTC':"ST/T-changes",
-                                'LVH':"left ventricular hypertrophy",
-                                'LAFB/LPFB':"left anterior/posterior fascicular block",
-                                'ISC_':"non-specific ischemic",
-                                'IRBBB':"incomplete right bundle branch block",
-                                'ISCA':"ischemic in anterolateral/anteroseptal/anterior leads",
-                                '_AVB':"AV block",
-                                'IVCD':"non-specific intraventricular conduction disturbance (block)",
-                                'NST_':"non-specific ST changes",
-                                'CRBBB':"complete right bundle branch block",
-                                'CLBBB':"complete left bundle branch block",
-                                'LAO/LAE':"left atrial overload/enlargement",
-                                'ISCI':"ischemic in inferior/inferolateral leads",
-                                'LMI':"lateral myocardial infarction",
-                                'RVH':"right ventricular hypertrophy",
-                                'RAO/RAE':"right atrial overload/enlargement",
-                                'WPW':"Wolf-Parkinson-White syndrome",
-                                'ILBBB':"incomplete left bundle branch block",
-                                'SEHYP':"septal hypertrophy",
-                                'PMI':"posterior myocardial infarction"}
-            f = open('/data_C/sdb1/lyi/ECGFM-KED-main/dataset/ptb-xl/output/exp1.1/data/mlb.pkl', 'rb')
-            data = pickle.load(f)
-            text_list = [all_diagnosis_label_map[item] for item in data.classes_]
-    elif config["use_what_label"] == "all":
-        with open("/data_C/sdb1/lyi/ECGFM-KED-main/dataset/all_label_map.json", 'r') as f:
-            all_diagnosis_label_map = json.load(f)
-        f = open('/data_C/sdb1/lyi/ECGFM-KED-main/dataset/ptb-xl/output/exp0/data/mlb.pkl', 'rb')
-        data = pickle.load(f)
-        text_list = [all_diagnosis_label_map[item] for item in data.classes_]
-    elif config["use_what_label"] == "form":
-        with open("/data_C/sdb1/lyi/ECGFM-KED-main/dataset/all_label_map.json", 'r') as f:
-            all_diagnosis_label_map = json.load(f)
-        f = open('/data_C/sdb1/lyi/ECGFM-KED-main/dataset/ptb-xl/output/exp2/data/mlb.pkl', 'rb')
-        data = pickle.load(f)
-        text_list = [all_diagnosis_label_map[item] for item in data.classes_]
-    elif config["use_what_label"] == "rhythm":
-        with open("/data_C/sdb1/lyi/ECGFM-KED-main/dataset/all_label_map.json", 'r') as f:
-            all_diagnosis_label_map = json.load(f)
-        f = open('/data_C/sdb1/lyi/ECGFM-KED-main/dataset/ptb-xl/output/exp3/data/mlb.pkl', 'rb')
-        data = pickle.load(f)
-        text_list = [all_diagnosis_label_map[item] for item in data.classes_]
-    elif config["use_label_augment"]:
-        backgroud_info = {
-            "Myocardial Infarction": "To identify myocardial infarction on a 12-lead ECG, focus on leads II, III, and aVF to "
-                                     "look for ST-segment elevation or depression. Additionally, look for reciprocal changes "
-                                     "in leads V1-V4. ST-segment elevation in leads V1-V4 may indicate an anterior wall myocardial "
-                                     "infarction, while ST-segment changes in leads II, III, and aVF may indicate an inferior "
-                                     "wall myocardial infarction. Q waves may also be present in the affected leads.",
-            "ST/T change": "To identify ST/T changes on a 12-lead ECG, the most important leads to focus on are leads II, "
-                           "III, aVF, V5, and V6. Look for abnormalities such as ST-segment elevation or depression, T-wave "
-                           "inversion or flattening, and QTc prolongation. Pay attention to the morphology and configuration "
-                           "of the changes. Other leads may also be helpful, such as lead aVL for detecting lateral wall changes "
-                           "and leads V1 and V2 for septal changes. It's important to also consider the patient's clinical "
-                           "presentation and other factors when interpreting ECG findings.",
-            "Conduction Disturbance": "In identifying conduction disturbances from a 12-lead ECG, you need to focus on the PR "
-                                      "interval and the QRS duration.  A prolonged PR interval indicates first-degree AV block "
-                                      "while a short PR interval suggests a possible Wolff-Parkinson-White (WPW) syndrome. "
-                                      "A widened QRS can indicate bundle branch block, while a narrow QRS suggests normal conduction. "
-                                      "Additionally, examining leads V1 and V6 can provide more context, as any deviations from their "
-                                      "expected patterns can suggest specific conduction abnormalities.",
-            "Hypertrophy": "To identify hypertrophy from a 12-lead ECG, you should focus on the QRS complex.  Specifically, "
-                           "look for an increase in the amplitude of the QRS complex, which can suggest ventricular hypertrophy. "
-                           "You should also examine leads V1 and V2, as a prominent R wave in these leads may indicate right "
-                           "ventricular hypertrophy, while a prominent S wave in leads V5 and V6 may suggest left ventricular "
-                           "hypertrophy.  Be sure to compare the amplitudes of the QRS complexes across all leads to make a "
-                           "definitive diagnosis."}
-        text_list = ["This electrocardiogram diagnosed: Normal ECG",
-                     backgroud_info[
-                         "Myocardial Infarction"] + "This electrocardiogram diagnosed: Myocardial Infarction",
-                     backgroud_info["ST/T change"] + "This electrocardiogram diagnosed: ST/T change",
-                     backgroud_info[
-                         "Conduction Disturbance"] + "This electrocardiogram diagnosed: Conduction Disturbance",
-                     backgroud_info["Hypertrophy"] + "This electrocardiogram diagnosed: Hypertrophy"]
-    else:
-        text_list = ["Normal ECG", "Myocardial Infarction", "ST/T change", "Conduction Disturbance",
-                     "Hypertrophy"]
+    # if config['use_what_label'] == 'mimiciv_label':
+    #     f = open('/data_C/sdb1/lyi/ked/ECGFM-KED-main/dataset/shaoxing/mlb.pkl', 'rb')
+    #     data = pickle.load(f)
+    #     text_list = data.classes_
+    #     if config["use_label_augment"]:
+    #         with open("/data_C/sdb1/lyi/ECGFM-KED-main/dataset/mimiciv/mimiciv_label_map_report.json", "r") as f:
+    #             background_info = json.load(f)
+    #         text_list = [background_info[item] for item in text_list]
+    # elif config['use_what_label'] == 'mimiciv_label_4000':
+    #     f = open('/data_C/sdb1/lyi/ECGFM-KED-main/dataset/mimiciv/mlb_4000.pkl', 'rb')
+    #     data = pickle.load(f)
+    #     text_list = data.classes_
+    # elif config["use_what_label"] == "diagnosis_label":
+    #     if config["use_label_augment"]:
+    #         with open("/data_C/sdb1/lyi/ECGFM-KED-main/dataset/all_label_augment.json", 'r') as f:
+    #             background_info = json.load(f)
+    #         with open("/data_C/sdb1/lyi/ECGFM-KED-main/dataset/all_diagnosis_label_map.json", 'r') as f:
+    #             all_diagnosis_label_map = json.load(f)
+    #         text_list = []
+    #         for key, value in all_diagnosis_label_map.items():
+    #             item = background_info[value] + "This electrocardiogram diagnosed:" + value
+    #             text_list.append(item)
+    #     else:
+    #         with open("/data_C/sdb1/lyi/ECGFM-KED-main/dataset/all_diagnosis_label_map.json", 'r') as f:
+    #             all_diagnosis_label_map = json.load(f)
+    #         f = open('/data_C/sdb1/lyi/ECGFM-KED-main/dataset/ptb-xl/output/exp1/data/mlb.pkl', 'rb')
+    #         data = pickle.load(f)
+    #         text_list = [all_diagnosis_label_map[item] for item in data.classes_]
+    # elif config["use_what_label"] == "subdiagnosis_label":
+    #     if config["use_label_augment"]:
+    #         with open("/data_C/sdb1/lyi/ECGFM-KED-main/dataset/all_subdiagnosis_label_augment.json", 'r') as f:
+    #             background_info = json.load(f)
+    #         with open("/data_C/sdb1/lyi/ECGFM-KED-main/dataset/all_subdiagnosis_label_map.json", 'r') as f:
+    #             all_diagnosis_label_map = json.load(f)
+    #         text_list = []
+    #         for key, value in all_diagnosis_label_map.items():
+    #             item = background_info[value] + "This electrocardiogram diagnosed:" + value
+    #             text_list.append(item)
+    #     else:
+    #         all_diagnosis_label_map = {'NORM':"normal ECG",
+    #                             'IMI':"inferior myocardial infarction",
+    #                             'AMI':"anterior myocardial infarction",
+    #                             'STTC':"ST/T-changes",
+    #                             'LVH':"left ventricular hypertrophy",
+    #                             'LAFB/LPFB':"left anterior/posterior fascicular block",
+    #                             'ISC_':"non-specific ischemic",
+    #                             'IRBBB':"incomplete right bundle branch block",
+    #                             'ISCA':"ischemic in anterolateral/anteroseptal/anterior leads",
+    #                             '_AVB':"AV block",
+    #                             'IVCD':"non-specific intraventricular conduction disturbance (block)",
+    #                             'NST_':"non-specific ST changes",
+    #                             'CRBBB':"complete right bundle branch block",
+    #                             'CLBBB':"complete left bundle branch block",
+    #                             'LAO/LAE':"left atrial overload/enlargement",
+    #                             'ISCI':"ischemic in inferior/inferolateral leads",
+    #                             'LMI':"lateral myocardial infarction",
+    #                             'RVH':"right ventricular hypertrophy",
+    #                             'RAO/RAE':"right atrial overload/enlargement",
+    #                             'WPW':"Wolf-Parkinson-White syndrome",
+    #                             'ILBBB':"incomplete left bundle branch block",
+    #                             'SEHYP':"septal hypertrophy",
+    #                             'PMI':"posterior myocardial infarction"}
+    #         f = open('/data_C/sdb1/lyi/ECGFM-KED-main/dataset/ptb-xl/output/exp1.1/data/mlb.pkl', 'rb')
+    #         data = pickle.load(f)
+    #         text_list = [all_diagnosis_label_map[item] for item in data.classes_]
+    # elif config["use_what_label"] == "all":
+    #     with open("/data_C/sdb1/lyi/ECGFM-KED-main/dataset/all_label_map.json", 'r') as f:
+    #         all_diagnosis_label_map = json.load(f)
+    #     f = open('/data_C/sdb1/lyi/ECGFM-KED-main/dataset/ptb-xl/output/exp0/data/mlb.pkl', 'rb')
+    #     data = pickle.load(f)
+    #     text_list = [all_diagnosis_label_map[item] for item in data.classes_]
+    # elif config["use_what_label"] == "form":
+    #     with open("/data_C/sdb1/lyi/ECGFM-KED-main/dataset/all_label_map.json", 'r') as f:
+    #         all_diagnosis_label_map = json.load(f)
+    #     f = open('/data_C/sdb1/lyi/ECGFM-KED-main/dataset/ptb-xl/output/exp2/data/mlb.pkl', 'rb')
+    #     data = pickle.load(f)
+    #     text_list = [all_diagnosis_label_map[item] for item in data.classes_]
+    # elif config["use_what_label"] == "rhythm":
+    #     with open("/data_C/sdb1/lyi/ECGFM-KED-main/dataset/all_label_map.json", 'r') as f:
+    #         all_diagnosis_label_map = json.load(f)
+    #     f = open('/data_C/sdb1/lyi/ECGFM-KED-main/dataset/ptb-xl/output/exp3/data/mlb.pkl', 'rb')
+    #     data = pickle.load(f)
+    #     text_list = [all_diagnosis_label_map[item] for item in data.classes_]
+    # elif config["use_label_augment"]:
+    #     backgroud_info = {
+    #         "Myocardial Infarction": "To identify myocardial infarction on a 12-lead ECG, focus on leads II, III, and aVF to "
+    #                                  "look for ST-segment elevation or depression. Additionally, look for reciprocal changes "
+    #                                  "in leads V1-V4. ST-segment elevation in leads V1-V4 may indicate an anterior wall myocardial "
+    #                                  "infarction, while ST-segment changes in leads II, III, and aVF may indicate an inferior "
+    #                                  "wall myocardial infarction. Q waves may also be present in the affected leads.",
+    #         "ST/T change": "To identify ST/T changes on a 12-lead ECG, the most important leads to focus on are leads II, "
+    #                        "III, aVF, V5, and V6. Look for abnormalities such as ST-segment elevation or depression, T-wave "
+    #                        "inversion or flattening, and QTc prolongation. Pay attention to the morphology and configuration "
+    #                        "of the changes. Other leads may also be helpful, such as lead aVL for detecting lateral wall changes "
+    #                        "and leads V1 and V2 for septal changes. It's important to also consider the patient's clinical "
+    #                        "presentation and other factors when interpreting ECG findings.",
+    #         "Conduction Disturbance": "In identifying conduction disturbances from a 12-lead ECG, you need to focus on the PR "
+    #                                   "interval and the QRS duration.  A prolonged PR interval indicates first-degree AV block "
+    #                                   "while a short PR interval suggests a possible Wolff-Parkinson-White (WPW) syndrome. "
+    #                                   "A widened QRS can indicate bundle branch block, while a narrow QRS suggests normal conduction. "
+    #                                   "Additionally, examining leads V1 and V6 can provide more context, as any deviations from their "
+    #                                   "expected patterns can suggest specific conduction abnormalities.",
+    #         "Hypertrophy": "To identify hypertrophy from a 12-lead ECG, you should focus on the QRS complex.  Specifically, "
+    #                        "look for an increase in the amplitude of the QRS complex, which can suggest ventricular hypertrophy. "
+    #                        "You should also examine leads V1 and V2, as a prominent R wave in these leads may indicate right "
+    #                        "ventricular hypertrophy, while a prominent S wave in leads V5 and V6 may suggest left ventricular "
+    #                        "hypertrophy.  Be sure to compare the amplitudes of the QRS complexes across all leads to make a "
+    #                        "definitive diagnosis."}
+    #     text_list = ["This electrocardiogram diagnosed: Normal ECG",
+    #                  backgroud_info[
+    #                      "Myocardial Infarction"] + "This electrocardiogram diagnosed: Myocardial Infarction",
+    #                  backgroud_info["ST/T change"] + "This electrocardiogram diagnosed: ST/T change",
+    #                  backgroud_info[
+    #                      "Conduction Disturbance"] + "This electrocardiogram diagnosed: Conduction Disturbance",
+    #                  backgroud_info["Hypertrophy"] + "This electrocardiogram diagnosed: Hypertrophy"]
+    # else:
+    #     text_list = ["Normal ECG", "Myocardial Infarction", "ST/T change", "Conduction Disturbance",
+    #                  "Hypertrophy"]
 
     
     val_scalar_step = epoch*len(data_loader)
@@ -502,8 +490,8 @@ def valid_on_ptb(model, ecg_encoder, text_encoder, tokenizer, data_loader, epoch
                 val_loss = criterion(ecg_features, label)
             else:
                 label = label.long()
-                text_features = get_text_features(text_encoder, text_list, tokenizer, device,
-                                                  max_length=args.max_length)
+                # text_features = get_text_features(text_encoder, text_list, tokenizer, device,
+                #                                   max_length=args.max_length)
                 pred_class = model(ecg_features.transpose(1, 2), text_features)  # (64,5,2)
                 val_loss = criterion(pred_class.view(-1,2),label.view(-1))
                 pred_class = torch.softmax(pred_class, dim=-1)

@@ -40,8 +40,8 @@ from models.ECGNet import ECGNet
 from models.resnet1d_wang import resnet1d_wang
 from models.xresnet1d_101 import xresnet1d101
 from models.cpc import CPCModel
-
-
+import pickle
+from engine.train_fg import get_text_features
 import gc
 import ast
 import os
@@ -112,14 +112,14 @@ def main(args, config):
                                   collate_fn=None)
 
     test_dataloader = DataLoader(test_dataset,
-                                  batch_size=config['batch_size'],
+                                  batch_size=1,
                                   num_workers=0,
                                   sampler=None,
                                   shuffle=True,
                                   drop_last=True,
                                   collate_fn=None)
     val_dataloader = DataLoader(val_dataset,
-                                 batch_size=config['batch_size'],
+                                 batch_size=1,
                                  num_workers=0,
                                  sampler=None,
                                  shuffle=True,
@@ -182,6 +182,16 @@ def main(args, config):
     #         lr_scheduler.step(epoch + warmup_steps)
     #     train_stats = train(model, ecg_model, text_encoder, tokenizer, train_dataloader, optimizer, epoch,
     #                         warmup_steps, device, lr_scheduler, args, config, writer)
+    if config['use_what_label'] == 'mimiciv_label':
+        f = open('/data_C/sdb1/lyi/ked/ECGFM-KED-main/dataset/shaoxing/mlb.pkl', 'rb')
+        data = pickle.load(f)
+        text_list = data.classes_
+    
+    text_features = get_text_features(
+    text_encoder, text_list, tokenizer, device, max_length=args.max_length
+        )
+
+
 
     for epoch in range(start_epoch, max_epoch):
         if epoch > 0:
@@ -208,7 +218,7 @@ def main(args, config):
         writer.add_scalar('lr/leaning_rate', lr_scheduler._get_lr(epoch)[0], epoch)
 
         val_loss, val_auc, val_metrics = valid_on_ptb(model, ecg_model, text_encoder, tokenizer,
-                                                              val_dataloader, epoch, device, args, config, writer)
+                                                              val_dataloader, epoch, device, args, config, writer,text_features=text_features)
         writer.add_scalar('loss/val_loss_epoch', val_loss, epoch)
         writer.add_scalar('loss/val_auc_epoch', val_auc, epoch)
         #保存最优模型和日志 如果本轮验证AUC最优，则保存模型权重与优化器、调度器等状态到指定目录，并在测试集上评估，记录日志。
@@ -247,7 +257,7 @@ def main(args, config):
 
             test_loss, test_auc, test_metrics = valid_on_ptb(model, ecg_model, text_encoder, tokenizer,
                                                                      test_dataloader, epoch, device, args, config,
-                                                                     writer)
+                                                                     writer,text_features=text_features)
             writer.add_scalar('loss/test_loss_epoch', test_loss, epoch)
             writer.add_scalar('loss/test_auc_epoch', test_auc, epoch)
 
@@ -298,7 +308,7 @@ if __name__ == '__main__':
     parser.add_argument('--max_length', default=256, type=int)
     parser.add_argument('--device', default='cuda')
     parser.add_argument('--seed', default=42, type=int)
-    parser.add_argument('--gpu', type=str,default='2,4,5,7', help='gpu')
+    parser.add_argument('--gpu', type=str,default='2,3,7', help='gpu')
     parser.add_argument('--distributed', default=False, type=bool)
     parser.add_argument('--action', default='train')
     args = parser.parse_args()
