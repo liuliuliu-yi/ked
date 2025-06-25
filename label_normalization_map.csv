@@ -155,25 +155,25 @@ low voltage in the extremity leads,Low voltage in the extremity leads
 low voltage in the precordial leads,Low voltage in the precordial leads
 lower voltage QRS in all lead,Lower voltage QRS in all leads
 fQRS Wave,fQRS Wave
-rSr' pattern in V1 lead,rSr' pattern in V1 lead
+rSr' pattern in V1 lead,Incomplete right bundle branch block
 poor R wave progression,Poor R wave progression
 non-specific ST changes,Non-specific ST changes
 non-specific ST segment junctional depression,Non-specific ST segment depression
 non-specific ST segment depression,Non-specific ST segment depression
-non-specific anterior T wave changes,Non-specific T wave abnormality 
-non-specific anterolateral ST-T changes,Non-specific T wave abnormality 
-non-specific anterolateral T wave changes,Non-specific T wave abnormality 
+non-specific anterior T wave changes,Non-specific T wave abnormality
+non-specific anterolateral ST-T changes,Non-specific T wave abnormality
+non-specific anterolateral T wave changes,Non-specific T wave abnormality
 non-specific anteroseptal T wave changes,Non-specific T wave abnormality
 non-specific extensive ST-T changes,Non-specific T wave abnormality
-non-specific extensive T wave changes,Non-specific T wave abnormality 
+non-specific extensive T wave changes,Non-specific T wave abnormality
 non-specific inferior and lateral T wave changes,Non-specific T wave abnormality
 non-specific inferior ST-T changes,Non-specific T wave abnormality
-non-specific inferior T wave changes,Non-specific T wave abnormality 
-non-specific inferior/lateral ST-T changes,Non-specific T wave abnormality 
-non-specific inferior/lateral T wave changes,Non-specific T wave abnormality 
-non-specific lateral ST segement changes,Non-specific T wave abnormality 
-non-specific lateral ST-T changes,Non-specific T wave abnormality 
-non-specific lateral T wave changes,Non-specific T wave abnormality 
+non-specific inferior T wave changes,Non-specific T wave abnormality
+non-specific inferior/lateral ST-T changes,Non-specific T wave abnormality
+non-specific inferior/lateral T wave changes,Non-specific T wave abnormality
+non-specific lateral ST segement changes,Non-specific T wave abnormality
+non-specific lateral ST-T changes,Non-specific T wave abnormality
+non-specific lateral T wave changes,Non-specific T wave abnormality
 non-specific septal T wave changes,Non-specific T wave abnormality
 non-diagnostic T abnormalities,Non-diagnostic T abnormalities
 non-specific intraventricular conduction delay,Non-specific intraventricular conduction delay/disturbance
@@ -232,17 +232,17 @@ Early repolarization of the ventricles,Early repolarization
 Myocardial infraction in the side wall,Myocardial infarction - side wall
 Myocardial infarction - side wall,Myocardial infarction - side wall
 Premature ventricular contractions,Premature ventricular contractions
-Premature ventricular beat,Premature ventricular beat
+Premature ventricular beat,Premature ventricular contractions
 Supraventricular premature beats,Supraventricular premature beats
 fQRS Wave,fQRS Wave
-rSr' pattern in V1 lead,rSr' pattern in V1 lead
-subendocardial injury in anterolateral leads,Subendocardial injury 
-subendocardial injury in anteroseptal leads,Subendocardial injury 
+rSr' pattern in V1 lead,Incomplete right bundle branch block
+subendocardial injury in anterolateral leads,Subendocardial injury
+subendocardial injury in anteroseptal leads,Subendocardial injury
 subendocardial injury in inferior leads,Subendocardial injury
 subendocardial injury in inferolateral leads,Subendocardial injury
 subendocardial injury in lateral leads,Subendocardial injury
 aberrant ventricular conduction,Abnormal ECG
-rSr' pattern in V1 lead,rSr' pattern in V1 lead
+rSr' pattern in V1 lead,Incomplete right bundle branch block
 Atrial Tachycardia,Atrial tachycardia
 Axis right shift,Right axis deviation
 Ectopic atrial tachycardia,Ectopic atrial tachycardia
