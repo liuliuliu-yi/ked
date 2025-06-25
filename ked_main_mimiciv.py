@@ -3,9 +3,8 @@
 # user:User
 # Author: tyy
 # createtime: 2023-06-03 15:14
-import torch.distributed as dist
-from torch.nn.parallel import DistributedDataParallel as DDP
-import os
+
+import ast
 import argparse
 import logging
 try:
@@ -36,19 +35,20 @@ from engine.train_fg import train,valid_on_ptb
 from models.clip_model import CLP_clinical, ModelDense,TQNModel
 from dataset.ecgDataset import NewECGDataset, TotalLabelDataset, MimicivDataset
 # from dataset_new import NewECGDataset
+#from models.model_new import ResNet1D
 from models.ECGNet import ECGNet
 from models.resnet1d_wang import resnet1d_wang
 from models.xresnet1d_101 import xresnet1d101
 from models.cpc import CPCModel
 import pickle
-from engine.train_fg import get_text_features
+
 import gc
 import ast
 import os
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:128"
 
 
-#dist.init_process_group(backend="nccl")
+
 
 def main(args, config):
     """"""
@@ -79,22 +79,15 @@ def main(args, config):
     #     X_val = json.load(f)
     # with open("./dataset/mimiciv/data_y_total_test.json", "r") as f:
     #     X_test = json.load(f)
-    #########################################################
-    #从这里输入训练、测试、验证数据集
-    ##########################################################
-    # X_train = pd.read_json("./dataset/mimiciv/data_y_total_train.json")
-    # X_val = pd.read_json("./dataset/mimiciv/data_y_total_val.json")
-    # X_test = pd.read_json("./dataset/mimiciv/data_y_total_test.json")
-    # y_train = np.load("./dataset/mimiciv/y_train_one_hot_data.npy", allow_pickle=True)
-    # y_test = np.load("./dataset/mimiciv/y_test_one_hot_data.npy", allow_pickle=True)
-    # y_val = np.load("./dataset/mimiciv/y_val_one_hot_data.npy", allow_pickle=True) 
-    #all
-    train_df = pd.read_csv("/data_C/sdb1/lyi/ked/ECGFM-KED-main/dataset/all_data/train_df.csv")
-    test_df = pd.read_csv("/data_C/sdb1/lyi/ked/ECGFM-KED-main/dataset/all_data/test_df.csv")
-    val_df = pd.read_csv("/data_C/sdb1/lyi/ked/ECGFM-KED-main/dataset/all_data/val_df.csv")
+    train_df = pd.read_csv("/data_C/sdb1/lyi/ked3/control-spiderman-ECGFM-KED-456810e/dataset/train_df.csv")
+    test_df = pd.read_csv("/data_C/sdb1/lyi/ked3/control-spiderman-ECGFM-KED-456810e/dataset/test_df.csv")
+    val_df = pd.read_csv("/data_C/sdb1/lyi/ked3/control-spiderman-ECGFM-KED-456810e/dataset/val_df.csv")
 
 
-    #构建Dataset与DataLoader
+    # X_feature = pd.read_json('/home/tyy/project/ecgfm_ked/dataset/ptb-xl/ptb-xl-plus/train_sample_feature_desc_result.json')
+    # X_report = pd.read_csv("/home/tyy/ecg_ptbxl/output/exp0/data/total_report_train_final.csv", index_col=[0])
+
+
     train_dataset = MimicivDataset(train_df, useAugment=config["use_report_augment"],
                                       use_what_label=config['use_what_label'], useFeature=config["use_feature_augment"],
                                    mimic_augment_type=config['mimic_augment_type'])
@@ -112,14 +105,14 @@ def main(args, config):
                                   collate_fn=None)
 
     test_dataloader = DataLoader(test_dataset,
-                                  batch_size=1,
+                                  batch_size=config['batch_size'],
                                   num_workers=0,
                                   sampler=None,
                                   shuffle=True,
                                   drop_last=True,
                                   collate_fn=None)
     val_dataloader = DataLoader(val_dataset,
-                                 batch_size=1,
+                                 batch_size=config['batch_size'],
                                  num_workers=0,
                                  sampler=None,
                                  shuffle=True,
@@ -132,7 +125,10 @@ def main(args, config):
     test_dataloader.num_samples = len(test_dataset)
     test_dataloader.num_batches = len(test_dataloader)
 
-    #构建模型 选择不同的ECG编码器模型
+
+    # if config["ecg_model_name"] == 'resnet':
+    #     ecg_model = ResNet1D(in_channels=1, base_filters=768, kernel_size=1, stride=2, groups = config["batch_size"],
+    #                          n_block = config["ecg_model_layers"], n_classes=config['class_num']).to(device=device)
     if config["ecg_model_name"] == 'densenet':
         ecg_model = ModelDense(dense_base_model='densenet121').to(device=device)
     elif config["ecg_model_name"] == 'ecgNet':
@@ -152,23 +148,22 @@ def main(args, config):
     elif config["ecg_model_name"] == 'xresnet1d_101':
         ecg_model = xresnet1d101(num_classes=config["class_num"], input_channels=12, kernel_size=5,
                                  ps_head=0.5).to(device=device)
-    #初始化文本编码器的tokenizer，文本编码器（CLP_clinical类，支持冻结部分层），TQNModel（Transformer Query Network，层数可配）。
+
     tokenizer = AutoTokenizer.from_pretrained(config["bert_model_name"], do_lower_case=True, local_files_only=False)
     text_encoder = CLP_clinical(bert_model_name=config["bert_model_name"], freeze_layers=config['freeze_layers']).to(device=device)
 
     model = TQNModel(num_layers=config["tqn_model_layers"]).to(device=device)
-    #model = DDP(model)
-    ##优化器与学习率调度器
+
     arg_opt = utils.AttrDict(config['optimizer'])
     optimizer = create_optimizer(arg_opt, model, ecg_model, text_encoder)
     arg_sche = utils.AttrDict(config['schedular'])
     lr_scheduler, _ = create_scheduler(arg_sche, optimizer)
-    #日志与训练准备
+
     print("Start training")
     start_time = time.time()
     writer = SummaryWriter(os.path.join(args.output_dir, 'log'))
     best_val_auc = 0.0
-    #日志与训练准备
+
     with open(os.path.join(args.output_dir, "log.txt"), "a") as f:
         f.write(config["purpose"] + "\n")
         f.write("batch size: "+str(config["batch_size"])+",freeze_bert: "+str(config["freeze_layers"])+",ecg_model_layers: "+
@@ -176,33 +171,13 @@ def main(args, config):
                 ",temperature: "+str(config["temperature"]) + ", loss_type: "+str(config["loss_type"]) + ", uniCl_type: "
                 + str(config["uniCl_type"])+ ", use_report_augment: " + str(config["use_report_augment"])+ ", use_ecgNet_Diagnosis: "
                 + str(config["use_ecgNet_Diagnosis"]) + ", loss_ratio: " + str(config["loss_ratio"]) + "\n")
-    #训练主循环
-    # for epoch in range(start_epoch, max_epoch):
-    #     if epoch > 0:
-    #         lr_scheduler.step(epoch + warmup_steps)
-    #     train_stats = train(model, ecg_model, text_encoder, tokenizer, train_dataloader, optimizer, epoch,
-    #                         warmup_steps, device, lr_scheduler, args, config, writer)
-    if config['use_what_label'] == 'mimiciv_label':
-        f = open('/data_C/sdb1/lyi/ked/ECGFM-KED-main/dataset/shaoxing/mlb.pkl', 'rb')
-        data = pickle.load(f)
-        text_list = data.classes_
-    
-    text_features = get_text_features(
-    text_encoder, text_list, tokenizer, device, max_length=args.max_length, batch_size=1
-)
-
 
     for epoch in range(start_epoch, max_epoch):
         if epoch > 0:
             lr_scheduler.step(epoch + warmup_steps)
-        # 传递accumulation_steps参数
-        train_stats = train(
-            model, ecg_model, text_encoder, tokenizer, train_dataloader, optimizer, epoch,
-            warmup_steps, device, lr_scheduler, args, config, writer,
-            accumulation_steps=config.get('accumulation_steps', 1)  # 新增参数，默认1
-        )    
-        
-        
+        train_stats = train(model, ecg_model, text_encoder, tokenizer, train_dataloader, optimizer, epoch,
+                            warmup_steps, device, lr_scheduler, args, config, writer)
+
         for k, v in train_stats.items():
             if k == 'loss':
                 train_loss_epoch = v
@@ -210,17 +185,17 @@ def main(args, config):
                 train_loss_ce_epoch = v
             elif k == 'loss_clip':
                 train_loss_clip_epoch = v
-        #记录各类损失到TensorBoard，便于可视化观察。
+
         writer.add_scalar('loss/train_loss_epoch', float(train_loss_epoch), epoch)
         writer.add_scalar('loss/train_loss_ce_epoch', float(train_loss_ce_epoch), epoch)
         writer.add_scalar('loss/train_loss_clip_epoch', float(train_loss_clip_epoch), epoch)
         writer.add_scalar('lr/leaning_rate', lr_scheduler._get_lr(epoch)[0], epoch)
 
         val_loss, val_auc, val_metrics = valid_on_ptb(model, ecg_model, text_encoder, tokenizer,
-                                                              val_dataloader, epoch, device, args, config, writer,text_features=text_features)
+                                                              val_dataloader, epoch, device, args, config, writer)
         writer.add_scalar('loss/val_loss_epoch', val_loss, epoch)
         writer.add_scalar('loss/val_auc_epoch', val_auc, epoch)
-        #保存最优模型和日志 如果本轮验证AUC最优，则保存模型权重与优化器、调度器等状态到指定目录，并在测试集上评估，记录日志。
+
         if best_val_auc < val_auc:
             with open(os.path.join(args.output_dir, "log.txt"), "a") as f:
                 f.write("Save best valid model.\n")
@@ -251,12 +226,12 @@ def main(args, config):
                 """
                 save_file_name = "best_valid_all_increase_zhipuai_augment_epoch_" + str(epoch)
             # /home/user/tyy/project/ked or /home/tyy/project/ecgfm_ked
-            with open("/data_C/sdb1/lyi/ked/ECGFM-KED-main/trained_model/checkpoints_mimiciv/" + save_file_name + ".pt", "wb") as f:
+            with open("/data_C/sdb1/lyi/ked3/control-spiderman-ECGFM-KED-456810e/trained_model/checkpoints_mimiciv/" + save_file_name + ".pt", "wb") as f:
                 torch.save(save_obj, f)
 
             test_loss, test_auc, test_metrics = valid_on_ptb(model, ecg_model, text_encoder, tokenizer,
                                                                      test_dataloader, epoch, device, args, config,
-                                                                     writer,text_features=text_features)
+                                                                     writer)
             writer.add_scalar('loss/test_loss_epoch', test_loss, epoch)
             writer.add_scalar('loss/test_auc_epoch', test_auc, epoch)
 
@@ -277,7 +252,7 @@ def main(args, config):
 
             with open(os.path.join(args.output_dir, "log.txt"), "a") as f:
                 f.write(json.dumps(log_stats) + "\n")
-        #保存断点（每轮）
+
         if utils.is_main_process():
             save_obj = {
                 'model': model.state_dict(),
@@ -288,12 +263,10 @@ def main(args, config):
                 'config': config,
                 'epoch': epoch,
             }
-            #每轮都保存当前checkpoint
-            with open("/data_C/sdb1/lyi/ked/ECGFM-KED-main/trained_model/checkpoints_mimiciv/checkpoint_state.pt", "wb") as f:
+
+            with open("/data_C/sdb1/lyi/ked3/control-spiderman-ECGFM-KED-456810e/trained_model/checkpoint_state.pt", "wb") as f:
                 torch.save(save_obj, f)
-            torch.cuda.empty_cache()
-            
-    #训练总时长统计
+
     total_time = time.time() - start_time
     total_time_str = str(datetime.timedelta(seconds=int(total_time)))
     print('Training time {}'.format(total_time_str))
@@ -311,18 +284,6 @@ if __name__ == '__main__':
     parser.add_argument('--distributed', default=False, type=bool)
     parser.add_argument('--action', default='train')
     args = parser.parse_args()
-
-
-    os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu  
-    
-    import os
-    import torch
-
-    print("CUDA_VISIBLE_DEVICES:", os.environ.get("CUDA_VISIBLE_DEVICES"))
-    print("可用 GPU 数量:", torch.cuda.device_count())
-    for i in range(torch.cuda.device_count()):
-        print(f"GPU {i} 名称:", torch.cuda.get_device_name(i))
-        print(f"GPU {i} 显存已用:", torch.cuda.memory_allocated(i) / 1024**2, "MB")
 
     #config = yaml.load(open(args.config, 'r'), Loader=yaml.Loader)
     yaml = YAML(typ='rt')  
@@ -345,4 +306,3 @@ if __name__ == '__main__':
             logging.info(f"  {name}: {val}")
             f.write(f"{name}: {val}\n")
     main(args, config)
-

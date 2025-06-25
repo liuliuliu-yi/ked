@@ -10,8 +10,8 @@ import os
 import wfdb
 from scipy.signal import resample
 import pandas as pd
+
 import ast
-import os
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:32"
 class MimicivDataset(Dataset):
     def __init__(self, df, useAugment=False, use_what_label='diagnosis_label', use_what_prompt='base',
@@ -27,10 +27,73 @@ class MimicivDataset(Dataset):
     def __len__(self): # # 返回数据集样本数
         return len(self.df) 
 
-    
-    ########################################################################
-    #重采样 可改变[12.1000]
-    #######################################################################
+
+    # def get_background_infp(self):
+    #     mimic_augment_type = self.mimic_augment_type
+    #     with open("/home/user/tyy/project/ked/dataset/mimiciv/"+mimic_augment_type+".json", "r") as f:
+    #         background_info = json.load(f)
+    #     f = open('/home/user/tyy/project/ked/dataset/mimiciv/mlb.pkl', 'rb')
+    #     data = pickle.load(f)
+    #     return background_info, data.classes_
+
+    # def report_augment(self, report):
+    #     """"""
+    #     new_report = []
+    #     for idx, item in enumerate(report):
+    #         if str(item) == 'nan':
+    #             new_report.append("")
+    #             continue
+    #         label_list = self.Y_data[idx]
+    #         disease_label_index = np.where(label_list == 1)[0]
+    #         background_list = []
+    #         for sub_idx in disease_label_index:
+    #             sub_label = self.label_list[sub_idx]
+    #             if sub_label in self.background_info.keys():
+    #                 background_list.append(self.background_info[sub_label])
+    #         if background_list:
+    #             background_info = ". ".join(background_list)
+    #             final_report = " This ECG is: " + item + "\nBackground information: " +background_info
+    #         else:
+    #             final_report = " This ECG is: " + item
+    #         new_report.append(final_report)
+    #     return new_report
+
+    # def report_feature_augment(self, report, feature):
+    #     """"""
+    #     new_report = []
+    #     for rpt, ftr in zip(report, feature):
+    #         if str(rpt) == 'nan':
+    #             new_report.append("")
+    #             continue
+    #         final_report = ', '.join(ftr) + ". ECG Report: " + rpt
+    #         new_report.append(final_report)
+    #     return new_report
+
+    # def report_feature_all_augment(self, report, feature):
+    #     """"""
+    #     new_report = []
+    #     for idx in range(len(report)):
+    #         rpt = report[idx]
+    #         ftr = feature[idx]
+    #         if str(rpt) == 'nan':
+    #             new_report.append("")
+    #             continue
+    #         label_list = self.Y_data[idx]
+    #         disease_label_index = np.where(label_list == 1)[0]
+    #         background_list = []
+    #         for sub_idx in disease_label_index:
+    #             sub_label = self.label_list[sub_idx]
+    #             sub_label = self.all_label_map[sub_label]
+    #             if sub_label in self.background_info.keys():
+    #                 background_list.append(self.background_info[sub_label])
+    #         if background_list:
+    #             background_info = ". ".join(background_list)
+    #             final_report = "Background information: " +background_info+ "ECG feature: " + ', '.join(ftr) +" ECG Report: " + rpt
+    #         else:
+    #             final_report = ', '.join(ftr) + ". ECG Report: " + rpt
+    #         new_report.append(final_report)
+    #     return new_report
+
     #获取单个样本
     def __getitem__(self, idx):
         # 1. 读取信号路径
@@ -70,7 +133,6 @@ class MimicivDataset(Dataset):
             "label": label,
             "report": report
         }
-       
 
 
 class NewECGDataset(Dataset):
@@ -907,10 +969,7 @@ if __name__ == '__main__':
 #     data = pickle.load(f)
 #     print([item for item in data.classes_])
 #     print()
-
-
-
-    # f = open('/home/user/tyy/project/ked/dataset/clinical_dataset/mlb12.pkl', 'rb')
+    # f = open('/data_C/sdb1/lyi/ked/ECGFM-KED-main/dataset/shaoxing/mlb.pkl', 'rb')
     # data = pickle.load(f)
     # label_list = {
     #             'I°房室传导阻滞': "first degree atrioventricular block",
@@ -931,9 +990,6 @@ if __name__ == '__main__':
     #             "窦性心动过速": "Sinus Tachycardia"}
     # print([label_list[item] for item in data.classes_])
     # print([item for item in data.classes_])
-
-
-
     # all_label_map = {"SB": "Sinus Bradycardia", "SR": "Sinus Rhythm", "AFIB": "Atrial Fibrillation",
     #                  "ST": "Sinus Tachycardia", "AF": "Atrial Flutter", "SA": "Sinus Arrhythmia:Focus on leads II, III, and aVF. Look for irregular R-R intervals that vary with respiration. The heart rate should increase during inspiration and decrease during expiration.",
     #                  "SVT": "Supraventricular Tachycardia", "AT": "Atrial Tachycardia"}
